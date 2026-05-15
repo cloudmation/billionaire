@@ -65,6 +65,8 @@ Player context:
 - Current screen: ${context?.screen ?? "home"}
 - Net worth: ${fmt(netWorth)}
 - Cash: ${fmt(context?.progress?.cash ?? 0)}
+- Check-in streak: ${context?.progress?.checkInStreak ?? 0} day(s)
+- Last check-in date: ${context?.progress?.lastCheckInDate ?? "never"}
 - Holdings: ${holdingsLine(context?.progress)}
 - Custom tickers added by player: ${context?.progress?.customStocks?.map((stock) => `${stock.sym} (${stock.name})`).join(", ") || "none"}
 - Selected stock: ${selected}

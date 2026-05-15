@@ -564,6 +564,25 @@ button:disabled {
   padding: 18px;
 }
 
+.checkin-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  border-color: rgba(39, 199, 123, 0.28);
+  background:
+    linear-gradient(135deg, rgba(39, 199, 123, 0.11), rgba(215, 165, 49, 0.05)),
+    rgba(16, 18, 22, 0.94);
+}
+
+.checkin-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
 .hero-card {
   display: grid;
   gap: 18px;
@@ -1443,8 +1462,13 @@ button:disabled {
   .grid-2,
   .grid-3,
   .grid-4,
-  .metric-grid {
+  .metric-grid,
+  .checkin-card {
     grid-template-columns: 1fr;
+  }
+
+  .checkin-actions {
+    justify-content: flex-start;
   }
 
   .table {

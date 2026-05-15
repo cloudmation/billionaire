@@ -107,6 +107,8 @@ export type GameProgressPayload = {
   gameMode: GameMode;
   startYear: EraYear;
   cash: number;
+  lastCheckInDate: string | null;
+  checkInStreak: number;
   holdings: Holding[];
   customStocks: Stock[];
   completedMissions: string[];

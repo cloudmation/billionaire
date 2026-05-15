@@ -47,7 +47,7 @@ import {
   STOCKS,
   STYLES
 } from "@/lib/game-data";
-import { useGameStore } from "@/lib/store";
+import { getActiveCheckInStreak, getDailyCheckInReward, getLocalDateKey, getNextCheckInStreak, useGameStore } from "@/lib/store";
 import type {
   BillMessage,
   EraYear,
@@ -505,6 +505,8 @@ export function BillionaireApp() {
   const gameMode = useGameStore((state) => state.gameMode);
   const startYear = useGameStore((state) => state.startYear);
   const cash = useGameStore((state) => state.cash);
+  const lastCheckInDate = useGameStore((state) => state.lastCheckInDate);
+  const checkInStreak = useGameStore((state) => state.checkInStreak);
   const holdings = useGameStore((state) => state.holdings);
   const customStocks = useGameStore((state) => state.customStocks);
   const completedMissions = useGameStore((state) => state.completedMissions);
@@ -518,6 +520,7 @@ export function BillionaireApp() {
   const setGameMode = useGameStore((state) => state.setGameMode);
   const startNewJourney = useGameStore((state) => state.startNewJourney);
   const addCustomStock = useGameStore((state) => state.addCustomStock);
+  const claimDailyCheckIn = useGameStore((state) => state.claimDailyCheckIn);
   const markStudied = useGameStore((state) => state.markStudied);
   const recordQuiz = useGameStore((state) => state.recordQuiz);
   const resetTodayProgress = useGameStore((state) => state.resetTodayProgress);
@@ -584,6 +587,11 @@ export function BillionaireApp() {
   const currentEra = ERAS.find((era) => era.year === startYear) ?? ERAS.find((era) => era.year === DEFAULT_YEAR)!;
   const modeLabel = isLiveMode ? "Live Market" : `Time Machine · ${startYear}`;
   const marketDateLabel = isLiveMode ? "Today" : `${startYear}`;
+  const checkedInToday = lastCheckInDate === getLocalDateKey();
+  const activeCheckInStreak = getActiveCheckInStreak(lastCheckInDate, checkInStreak);
+  const nextCheckInStreak = getNextCheckInStreak(lastCheckInDate, checkInStreak);
+  const availableCheckInReward = getDailyCheckInReward(nextCheckInStreak);
+  const tomorrowCheckInReward = getDailyCheckInReward((checkedInToday ? Math.max(1, checkInStreak) : nextCheckInStreak) + 1);
 
   useEffect(() => {
     const panel = chatScrollRef.current;
@@ -632,7 +640,23 @@ export function BillionaireApp() {
       }).catch(() => undefined);
     }, 450);
     return () => window.clearTimeout(timer);
-  }, [cash, holdings, customStocks, completedMissions, studiedStyles, trades, quizHistory, userName, gameMode, startYear, hasOnboarded, hydrated, snapshot]);
+  }, [
+    cash,
+    holdings,
+    customStocks,
+    completedMissions,
+    studiedStyles,
+    trades,
+    quizHistory,
+    userName,
+    gameMode,
+    startYear,
+    lastCheckInDate,
+    checkInStreak,
+    hasOnboarded,
+    hydrated,
+    snapshot
+  ]);
 
   const sectors = useMemo(() => ["All", ...Array.from(new Set(allStocks.map((stock) => stock.sector)))], [allStocks]);
   const filteredStocks = useMemo(
@@ -727,6 +751,18 @@ export function BillionaireApp() {
       {
         role: "assistant",
         content: `${stock.sym} is now in your Market list. Before trading it, ask: what does this company sell, and why might customers keep buying it?`
+      }
+    ]);
+  }
+
+  function handleDailyCheckIn() {
+    const result = claimDailyCheckIn();
+    if (!result.claimed) return;
+    setMessages((current) => [
+      ...current,
+      {
+        role: "assistant",
+        content: `Nice check-in, ${userName || "Investor"} — you earned ${fmt(result.reward)} cash. Your streak is now ${result.streak} day${result.streak === 1 ? "" : "s"}.`
       }
     ]);
   }
@@ -897,7 +933,7 @@ export function BillionaireApp() {
         </div>
         <div className="tiny-pill">
           <Zap size={14} />
-          12 day streak
+          {activeCheckInStreak} day streak
         </div>
       </header>
 
@@ -1405,6 +1441,30 @@ export function BillionaireApp() {
             </div>
           ))}
         </div>
+
+        <section className="card checkin-card">
+          <div>
+            <div className="section-kicker gold">Daily check-in</div>
+            <h2 className="display" style={{ color: checkedInToday ? "var(--green)" : "var(--gold-2)", fontSize: 36, margin: "8px 0 4px" }}>
+              {checkedInToday ? "Checked in today" : `Claim ${fmt(availableCheckInReward)}`}
+            </h2>
+            <p className="muted" style={{ lineHeight: 1.55, margin: 0 }}>
+              {checkedInToday
+                ? `Come back tomorrow for ${fmt(tomorrowCheckInReward)}.`
+                : `Keep showing up. Today becomes day ${nextCheckInStreak} of your check-in streak.`}
+            </p>
+          </div>
+          <div className="checkin-actions">
+            <span className="mode-pill">
+              <Zap size={14} />
+              {activeCheckInStreak} day streak
+            </span>
+            <button className="success-button" disabled={checkedInToday} onClick={handleDailyCheckIn} type="button">
+              {checkedInToday ? "Claimed" : "Check in"}
+              <Check size={17} />
+            </button>
+          </div>
+        </section>
 
         <div className="grid-2">
           <section className="card">

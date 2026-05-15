@@ -22,6 +22,7 @@ type GameState = GameProgressPayload & {
   setGameMode: (gameMode: GameMode) => void;
   startNewJourney: (input: { userName: string; startYear: EraYear; playerAge?: number }) => void;
   addCustomStock: (stock: Stock) => void;
+  claimDailyCheckIn: () => { claimed: boolean; reward: number; streak: number; nextReward: number };
   buyStock: (input: {
     sym: string;
     shares: number;
@@ -63,6 +64,36 @@ function tradeId() {
   return `trade-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+export function getLocalDateKey(date = new Date()) {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 10);
+}
+
+function getPreviousLocalDateKey() {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  return getLocalDateKey(yesterday);
+}
+
+export function getNextCheckInStreak(lastCheckInDate: string | null, currentStreak: number) {
+  const today = getLocalDateKey();
+  if (lastCheckInDate === today) return Math.max(1, currentStreak);
+  if (lastCheckInDate === getPreviousLocalDateKey()) return Math.max(0, currentStreak) + 1;
+  return 1;
+}
+
+export function getActiveCheckInStreak(lastCheckInDate: string | null, currentStreak: number) {
+  const today = getLocalDateKey();
+  if (lastCheckInDate === today || lastCheckInDate === getPreviousLocalDateKey()) {
+    return Math.max(0, currentStreak);
+  }
+  return 0;
+}
+
+export function getDailyCheckInReward(streak: number) {
+  return Math.min(500, 100 + (Math.max(1, streak) - 1) * 50);
+}
+
 const initialState: GameProgressPayload = {
   hasOnboarded: false,
   userName: "",
@@ -70,6 +101,8 @@ const initialState: GameProgressPayload = {
   gameMode: "time-machine",
   startYear: DEFAULT_YEAR,
   cash: STARTING_CASH,
+  lastCheckInDate: null,
+  checkInStreak: 0,
   holdings: INITIAL_HOLDINGS,
   customStocks: [],
   completedMissions: [],
@@ -93,6 +126,8 @@ export const useGameStore = create<GameState>()(
           playerAge: progress.playerAge ?? state.playerAge,
           gameMode: progress.gameMode ?? state.gameMode,
           startYear: progress.startYear ?? state.startYear,
+          lastCheckInDate: progress.lastCheckInDate ?? state.lastCheckInDate,
+          checkInStreak: progress.checkInStreak ?? state.checkInStreak,
           holdings: progress.holdings ?? state.holdings,
           customStocks: progress.customStocks ?? state.customStocks,
           completedMissions: progress.completedMissions ?? state.completedMissions,
@@ -116,6 +151,8 @@ export const useGameStore = create<GameState>()(
           gameMode: "time-machine",
           startYear,
           cash: STARTING_CASH,
+          lastCheckInDate: null,
+          checkInStreak: 0,
           holdings: [],
           customStocks: [],
           completedMissions: [],
@@ -130,6 +167,33 @@ export const useGameStore = create<GameState>()(
             ...state.customStocks.filter((candidate) => candidate.sym !== stock.sym)
           ].slice(0, 50)
         })),
+      claimDailyCheckIn: () => {
+        const state = get();
+        const today = getLocalDateKey();
+        const currentStreak = Math.max(0, state.checkInStreak);
+        if (state.lastCheckInDate === today) {
+          return {
+            claimed: false,
+            reward: 0,
+            streak: currentStreak,
+            nextReward: getDailyCheckInReward(currentStreak + 1)
+          };
+        }
+
+        const nextStreak = getNextCheckInStreak(state.lastCheckInDate, currentStreak);
+        const reward = getDailyCheckInReward(nextStreak);
+        set({
+          cash: state.cash + reward,
+          lastCheckInDate: today,
+          checkInStreak: nextStreak
+        });
+        return {
+          claimed: true,
+          reward,
+          streak: nextStreak,
+          nextReward: getDailyCheckInReward(nextStreak + 1)
+        };
+      },
       buyStock: ({ sym, shares, price, style }) =>
         set((state) => {
           const affordableShares = Math.floor(state.cash / price);
@@ -181,11 +245,11 @@ export const useGameStore = create<GameState>()(
         })),
       resetTodayProgress: () =>
         set((state) => {
-          const today = new Date().toISOString().slice(0, 10);
+          const today = getLocalDateKey();
           return {
             completedMissions: [],
-            trades: state.trades.filter((trade) => trade.createdAt.slice(0, 10) !== today),
-            quizHistory: state.quizHistory.filter((quiz) => quiz.createdAt.slice(0, 10) !== today)
+            trades: state.trades.filter((trade) => getLocalDateKey(new Date(trade.createdAt)) !== today),
+            quizHistory: state.quizHistory.filter((quiz) => getLocalDateKey(new Date(quiz.createdAt)) !== today)
           };
         }),
       markStudied: (style) =>
@@ -212,6 +276,8 @@ export const useGameStore = create<GameState>()(
           gameMode: state.gameMode,
           startYear: state.startYear,
           cash: state.cash,
+          lastCheckInDate: state.lastCheckInDate,
+          checkInStreak: state.checkInStreak,
           holdings: state.holdings,
           customStocks: state.customStocks,
           completedMissions: state.completedMissions,
@@ -230,6 +296,8 @@ export const useGameStore = create<GameState>()(
         gameMode: state.gameMode,
         startYear: state.startYear,
         cash: state.cash,
+        lastCheckInDate: state.lastCheckInDate,
+        checkInStreak: state.checkInStreak,
         holdings: state.holdings,
         customStocks: state.customStocks,
         completedMissions: state.completedMissions,
