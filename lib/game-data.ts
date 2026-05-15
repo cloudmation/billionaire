@@ -164,6 +164,24 @@ export const STOCKS: Stock[] = [
     fiftyTwoWeek: 99
   },
   {
+    sym: "CSCO",
+    name: "Cisco",
+    mascot: "CS",
+    sector: "Networking",
+    price: 118.21,
+    change: 2.7,
+    pe: 43,
+    growth: 6,
+    yield: 1.3,
+    moat: "Enterprise network installed base",
+    desc: "Networking hardware, cybersecurity, collaboration tools, and cloud infrastructure.",
+    since2010: 420,
+    beta: 0.9,
+    rsi: 63,
+    volumeScore: 74,
+    fiftyTwoWeek: 92
+  },
+  {
     sym: "NKE",
     name: "Nike",
     mascot: "NK",
