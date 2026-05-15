@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
-import { DEFAULT_YEAR, fmt, portfolioValue, STOCKS } from "@/lib/game-data";
+import { DEFAULT_YEAR, fmt, STOCKS } from "@/lib/game-data";
 import { logBillMessages } from "@/lib/db";
 import type { BillMessage, GameProgressPayload, Stock, TabId } from "@/lib/types";
 
@@ -23,17 +23,25 @@ const client = apiKey ? new OpenAI({ apiKey }) : null;
 
 function holdingsLine(progress?: GameProgressPayload) {
   if (!progress?.holdings?.length) return "No current holdings.";
+  const stocks = [...STOCKS, ...(progress.customStocks ?? [])];
   return progress.holdings
     .map((holding) => {
-      const stock = STOCKS.find((candidate) => candidate.sym === holding.sym);
+      const stock = stocks.find((candidate) => candidate.sym === holding.sym);
       return `${holding.shares} shares of ${holding.sym}${stock ? ` (${fmt(stock.price * holding.shares)})` : ""}`;
     })
     .join(", ");
 }
 
+function portfolioValueFor(progress?: GameProgressPayload) {
+  const stocks = [...STOCKS, ...(progress?.customStocks ?? [])];
+  return (progress?.holdings ?? []).reduce((sum, holding) => {
+    const stock = stocks.find((candidate) => candidate.sym === holding.sym);
+    return sum + (stock?.price ?? 0) * holding.shares;
+  }, 0);
+}
+
 function buildInstructions(context?: BillContext) {
-  const netWorth =
-    (context?.progress?.cash ?? 0) + portfolioValue(context?.progress?.holdings ?? []);
+  const netWorth = (context?.progress?.cash ?? 0) + portfolioValueFor(context?.progress);
   const selected = context?.selectedStock
     ? `${context.selectedStock.sym} (${context.selectedStock.name}), price ${fmt(context.selectedStock.price)}, P/E ${
         context.selectedStock.pe ?? "not profitable"
@@ -58,6 +66,7 @@ Player context:
 - Net worth: ${fmt(netWorth)}
 - Cash: ${fmt(context?.progress?.cash ?? 0)}
 - Holdings: ${holdingsLine(context?.progress)}
+- Custom tickers added by player: ${context?.progress?.customStocks?.map((stock) => `${stock.sym} (${stock.name})`).join(", ") || "none"}
 - Selected stock: ${selected}
 - Recent trades: ${
     context?.progress?.trades?.slice(0, 3).map((trade) => `${trade.action} ${trade.shares} ${trade.sym}`).join(", ") ||

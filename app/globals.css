@@ -665,6 +665,12 @@ button:disabled {
   letter-spacing: 0.06em;
 }
 
+.owned-pill.custom {
+  border-color: rgba(85, 199, 247, 0.45);
+  background: rgba(85, 199, 247, 0.12);
+  color: var(--cyan);
+}
+
 .filter-row {
   display: flex;
   gap: 8px;
@@ -970,6 +976,43 @@ button:disabled {
   background: #070708;
   padding: 28px;
   box-shadow: 0 28px 100px rgba(0, 0, 0, 0.7);
+}
+
+.ticker-dialog {
+  width: min(560px, 100%);
+  max-height: min(90vh, 760px);
+  overflow: auto;
+  border: 1px solid rgba(215, 165, 49, 0.35);
+  border-radius: 18px;
+  background: #08090b;
+  padding: 24px;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.62);
+}
+
+.ticker-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.form-label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted-2);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.form-error {
+  border: 1px solid rgba(240, 93, 94, 0.42);
+  border-radius: var(--radius);
+  background: rgba(240, 93, 94, 0.1);
+  color: #ffb0b0;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .mode-card-stack {

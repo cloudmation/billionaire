@@ -108,6 +108,7 @@ export type GameProgressPayload = {
   startYear: EraYear;
   cash: number;
   holdings: Holding[];
+  customStocks: Stock[];
   completedMissions: string[];
   studiedStyles: InvestmentStyleId[];
   trades: Trade[];

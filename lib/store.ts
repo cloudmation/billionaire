@@ -10,6 +10,7 @@ import type {
   Holding,
   InvestmentStyleId,
   QuizResult,
+  Stock,
   Trade
 } from "./types";
 
@@ -20,6 +21,7 @@ type GameState = GameProgressPayload & {
   setUserName: (userName: string) => void;
   setGameMode: (gameMode: GameMode) => void;
   startNewJourney: (input: { userName: string; startYear: EraYear; playerAge?: number }) => void;
+  addCustomStock: (stock: Stock) => void;
   buyStock: (input: {
     sym: string;
     shares: number;
@@ -69,6 +71,7 @@ const initialState: GameProgressPayload = {
   startYear: DEFAULT_YEAR,
   cash: STARTING_CASH,
   holdings: INITIAL_HOLDINGS,
+  customStocks: [],
   completedMissions: [],
   studiedStyles: ["value"],
   trades: [],
@@ -91,6 +94,7 @@ export const useGameStore = create<GameState>()(
           gameMode: progress.gameMode ?? state.gameMode,
           startYear: progress.startYear ?? state.startYear,
           holdings: progress.holdings ?? state.holdings,
+          customStocks: progress.customStocks ?? state.customStocks,
           completedMissions: progress.completedMissions ?? state.completedMissions,
           studiedStyles: progress.studiedStyles ?? state.studiedStyles,
           trades: progress.trades ?? state.trades,
@@ -113,11 +117,19 @@ export const useGameStore = create<GameState>()(
           startYear,
           cash: STARTING_CASH,
           holdings: [],
+          customStocks: [],
           completedMissions: [],
           studiedStyles: ["value"],
           trades: [],
           quizHistory: []
         }),
+      addCustomStock: (stock) =>
+        set((state) => ({
+          customStocks: [
+            stock,
+            ...state.customStocks.filter((candidate) => candidate.sym !== stock.sym)
+          ].slice(0, 50)
+        })),
       buyStock: ({ sym, shares, price, style }) =>
         set((state) => {
           const affordableShares = Math.floor(state.cash / price);
@@ -201,6 +213,7 @@ export const useGameStore = create<GameState>()(
           startYear: state.startYear,
           cash: state.cash,
           holdings: state.holdings,
+          customStocks: state.customStocks,
           completedMissions: state.completedMissions,
           studiedStyles: state.studiedStyles,
           trades: state.trades,
@@ -218,6 +231,7 @@ export const useGameStore = create<GameState>()(
         startYear: state.startYear,
         cash: state.cash,
         holdings: state.holdings,
+        customStocks: state.customStocks,
         completedMissions: state.completedMissions,
         studiedStyles: state.studiedStyles,
         trades: state.trades,

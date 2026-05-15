@@ -38,13 +38,11 @@ import {
   fmtCompact,
   getMilestoneIndex,
   getMilestoneProgress,
-  getStock,
   MILESTONES,
   MISSIONS,
   pct,
   PORTFOLIO_HISTORY,
   portfolioCost,
-  portfolioValue,
   QUIZ_POOL,
   STOCKS,
   STYLES
@@ -78,6 +76,14 @@ type ActiveQuiz = Quiz & {
   current: number;
   answers: number[];
   complete?: boolean;
+};
+
+type CustomTickerForm = {
+  sym: string;
+  name: string;
+  sector: string;
+  price: string;
+  change: string;
 };
 
 const navItems: Array<{ id: TabId; label: string; icon: typeof Home }> = [
@@ -415,10 +421,10 @@ function SparklineSvg({
   );
 }
 
-function HoldingsBars({ holdings }: { holdings: GameProgressPayload["holdings"] }) {
+function HoldingsBars({ holdings, stocks }: { holdings: GameProgressPayload["holdings"]; stocks: Stock[] }) {
   const items = holdings
     .map((holding) => {
-      const stock = getStock(holding.sym);
+      const stock = stocks.find((candidate) => candidate.sym === holding.sym);
       return {
         sym: holding.sym,
         value: (stock?.price ?? 0) * holding.shares
@@ -500,6 +506,7 @@ export function BillionaireApp() {
   const startYear = useGameStore((state) => state.startYear);
   const cash = useGameStore((state) => state.cash);
   const holdings = useGameStore((state) => state.holdings);
+  const customStocks = useGameStore((state) => state.customStocks);
   const completedMissions = useGameStore((state) => state.completedMissions);
   const studiedStyles = useGameStore((state) => state.studiedStyles);
   const trades = useGameStore((state) => state.trades);
@@ -510,6 +517,7 @@ export function BillionaireApp() {
   const setUserName = useGameStore((state) => state.setUserName);
   const setGameMode = useGameStore((state) => state.setGameMode);
   const startNewJourney = useGameStore((state) => state.startNewJourney);
+  const addCustomStock = useGameStore((state) => state.addCustomStock);
   const markStudied = useGameStore((state) => state.markStudied);
   const recordQuiz = useGameStore((state) => state.recordQuiz);
   const resetTodayProgress = useGameStore((state) => state.resetTodayProgress);
@@ -522,6 +530,15 @@ export function BillionaireApp() {
   const [wizard, setWizard] = useState<WizardState | null>(null);
   const [modePickerOpen, setModePickerOpen] = useState(false);
   const [billPanelOpen, setBillPanelOpen] = useState(false);
+  const [addTickerOpen, setAddTickerOpen] = useState(false);
+  const [addTickerError, setAddTickerError] = useState("");
+  const [customTickerForm, setCustomTickerForm] = useState<CustomTickerForm>({
+    sym: "",
+    name: "",
+    sector: "",
+    price: "",
+    change: ""
+  });
   const [userNameDraft, setUserNameDraft] = useState(userName);
   const [onboardingStep, setOnboardingStep] = useState<"name" | "era">("name");
   const [onboardingName, setOnboardingName] = useState("");
@@ -540,7 +557,21 @@ export function BillionaireApp() {
   const loadedServer = useRef<string | null>(null);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
 
-  const stockValue = useMemo(() => portfolioValue(holdings), [holdings]);
+  const allStocks = useMemo(() => {
+    const bySymbol = new Map<string, Stock>();
+    STOCKS.forEach((stock) => bySymbol.set(stock.sym, stock));
+    customStocks.forEach((stock) => bySymbol.set(stock.sym, stock));
+    return Array.from(bySymbol.values());
+  }, [customStocks]);
+  const findStock = (sym: string) => allStocks.find((stock) => stock.sym === sym);
+  const stockValue = useMemo(
+    () =>
+      holdings.reduce((sum, holding) => {
+        const stock = allStocks.find((candidate) => candidate.sym === holding.sym);
+        return sum + (stock?.price ?? 0) * holding.shares;
+      }, 0),
+    [allStocks, holdings]
+  );
   const costBasis = useMemo(() => portfolioCost(holdings), [holdings]);
   const netWorth = cash + stockValue;
   const gain = stockValue - costBasis;
@@ -601,30 +632,30 @@ export function BillionaireApp() {
       }).catch(() => undefined);
     }, 450);
     return () => window.clearTimeout(timer);
-  }, [cash, holdings, completedMissions, studiedStyles, trades, quizHistory, userName, gameMode, startYear, hasOnboarded, hydrated, snapshot]);
+  }, [cash, holdings, customStocks, completedMissions, studiedStyles, trades, quizHistory, userName, gameMode, startYear, hasOnboarded, hydrated, snapshot]);
 
-  const sectors = useMemo(() => ["All", ...Array.from(new Set(STOCKS.map((stock) => stock.sector)))], []);
+  const sectors = useMemo(() => ["All", ...Array.from(new Set(allStocks.map((stock) => stock.sector)))], [allStocks]);
   const filteredStocks = useMemo(
     () =>
-      STOCKS.filter((stock) => {
+      allStocks.filter((stock) => {
         const sectorMatch = sector === "All" || stock.sector === sector;
         const textMatch =
           !search.trim() ||
           `${stock.sym} ${stock.name} ${stock.sector}`.toLowerCase().includes(search.trim().toLowerCase());
         return sectorMatch && textMatch;
       }),
-    [sector, search]
+    [allStocks, sector, search]
   );
 
   const allocation = useMemo(() => {
     const bySector = new Map<string, number>();
     holdings.forEach((holding) => {
-      const stock = getStock(holding.sym);
+      const stock = allStocks.find((candidate) => candidate.sym === holding.sym);
       if (!stock) return;
       bySector.set(stock.sector, (bySector.get(stock.sector) ?? 0) + stock.price * holding.shares);
     });
     return Array.from(bySector.entries()).map(([name, value]) => ({ name, value }));
-  }, [holdings]);
+  }, [allStocks, holdings]);
 
   function commitUserName() {
     const nextName = userNameDraft.trim() || userName || "Investor";
@@ -643,6 +674,61 @@ export function BillionaireApp() {
       }
     ]);
     setTab("home");
+  }
+
+  function updateCustomTickerForm(field: keyof CustomTickerForm, value: string) {
+    setAddTickerError("");
+    setCustomTickerForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function submitCustomTicker() {
+    const sym = customTickerForm.sym.toUpperCase().replace(/[^A-Z0-9.-]/g, "").slice(0, 8);
+    const price = Number(customTickerForm.price);
+    const change = Number(customTickerForm.change || 0);
+    if (sym.length < 1) {
+      setAddTickerError("Enter a ticker symbol.");
+      return;
+    }
+    if (!Number.isFinite(price) || price <= 0) {
+      setAddTickerError("Enter a positive price.");
+      return;
+    }
+    if (!Number.isFinite(change)) {
+      setAddTickerError("Change must be a number.");
+      return;
+    }
+
+    const stock: Stock = {
+      sym,
+      name: customTickerForm.name.trim() || sym,
+      mascot: sym.slice(0, 2),
+      sector: customTickerForm.sector.trim() || "Custom",
+      price: Math.round(price * 100) / 100,
+      change: Math.round(change * 100) / 100,
+      pe: null,
+      growth: 0,
+      yield: 0,
+      moat: "Needs research",
+      desc: "Custom ticker added by the player. Research the business before trading.",
+      since2010: 0,
+      beta: 1,
+      rsi: 50,
+      volumeScore: 50,
+      fiftyTwoWeek: 50
+    };
+
+    addCustomStock(stock);
+    setSector("All");
+    setSearch(stock.sym);
+    setCustomTickerForm({ sym: "", name: "", sector: "", price: "", change: "" });
+    setAddTickerOpen(false);
+    setMessages((current) => [
+      ...current,
+      {
+        role: "assistant",
+        content: `${stock.sym} is now in your Market list. Before trading it, ask: what does this company sell, and why might customers keep buying it?`
+      }
+    ]);
   }
 
   function openWizard(stock: Stock) {
@@ -908,6 +994,7 @@ export function BillionaireApp() {
 
       {modePickerOpen ? renderModePicker() : null}
       {wizard ? renderWizard() : null}
+      {addTickerOpen ? renderAddTickerModal() : null}
     </div>
   );
 
@@ -985,6 +1072,105 @@ export function BillionaireApp() {
           </div>
         </form>
       </aside>
+    );
+  }
+
+  function renderAddTickerModal() {
+    const normalizedSymbol = customTickerForm.sym.toUpperCase().replace(/[^A-Z0-9.-]/g, "").slice(0, 8);
+    const existing = normalizedSymbol ? allStocks.find((stock) => stock.sym === normalizedSymbol) : null;
+
+    return (
+      <div className="modal-backdrop" role="dialog" aria-modal="true">
+        <section className="ticker-dialog">
+          <div className="space-between" style={{ alignItems: "flex-start" }}>
+            <div>
+              <div className="section-kicker gold">Custom market ticker</div>
+              <h2 className="page-title" style={{ marginTop: 6 }}>
+                Add a ticker
+              </h2>
+              <p className="page-subtitle">Add a company snapshot to your Market list, then run the Analysis Wizard before trading.</p>
+            </div>
+            <button aria-label="Close add ticker" className="icon-button" onClick={() => setAddTickerOpen(false)} type="button">
+              <X size={18} />
+            </button>
+          </div>
+
+          <form
+            className="ticker-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              submitCustomTicker();
+            }}
+          >
+            <label className="form-label">
+              Ticker
+              <input
+                autoFocus
+                className="input"
+                maxLength={8}
+                onChange={(event) => updateCustomTickerForm("sym", event.target.value.toUpperCase())}
+                placeholder="MSFT"
+                value={customTickerForm.sym}
+              />
+            </label>
+            <label className="form-label">
+              Company name
+              <input
+                className="input"
+                onChange={(event) => updateCustomTickerForm("name", event.target.value)}
+                placeholder="Microsoft"
+                value={customTickerForm.name}
+              />
+            </label>
+            <label className="form-label">
+              Sector
+              <input
+                className="input"
+                onChange={(event) => updateCustomTickerForm("sector", event.target.value)}
+                placeholder="Tech"
+                value={customTickerForm.sector}
+              />
+            </label>
+            <label className="form-label">
+              Price
+              <input
+                className="input"
+                inputMode="decimal"
+                onChange={(event) => updateCustomTickerForm("price", event.target.value)}
+                placeholder="100.00"
+                value={customTickerForm.price}
+              />
+            </label>
+            <label className="form-label">
+              Today&apos;s change %
+              <input
+                className="input"
+                inputMode="decimal"
+                onChange={(event) => updateCustomTickerForm("change", event.target.value)}
+                placeholder="0"
+                value={customTickerForm.change}
+              />
+            </label>
+
+            {existing ? (
+              <div className="panel-block muted" style={{ padding: 12 }}>
+                {existing.sym} is already in the market list. Saving will update your custom copy if it is one you added.
+              </div>
+            ) : null}
+            {addTickerError ? <div className="form-error">{addTickerError}</div> : null}
+
+            <div className="row" style={{ justifyContent: "flex-end" }}>
+              <button className="plain-button" onClick={() => setAddTickerOpen(false)} type="button">
+                Cancel
+              </button>
+              <button className="primary-button" type="submit">
+                Add ticker
+                <Plus size={17} />
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
     );
   }
 
@@ -1255,7 +1441,7 @@ export function BillionaireApp() {
           <section className="card">
             <div className="section-kicker">Portfolio snapshot</div>
             <div className="chart-frame" style={{ height: 210 }}>
-              <HoldingsBars holdings={holdings} />
+              <HoldingsBars holdings={holdings} stocks={allStocks} />
             </div>
           </section>
         </div>
@@ -1268,9 +1454,15 @@ export function BillionaireApp() {
       <div className="fade-in">
         <div className="space-between" style={{ alignItems: "flex-start", marginBottom: 4 }}>
           <SectionHeader title={`Stock Market · ${marketDateLabel}`} subtitle="Click any company to run the Analysis Wizard before trading." />
-          <div className="mode-pill">
-            {isLiveMode ? <Radio size={14} /> : <Target size={14} />}
-            {isLiveMode ? "Live Market" : "3 trades/day"}
+          <div className="row" style={{ justifyContent: "flex-end", flexWrap: "wrap" }}>
+            <button className="plain-button" onClick={() => setAddTickerOpen(true)} type="button">
+              <Plus size={16} />
+              Add ticker
+            </button>
+            <div className="mode-pill">
+              {isLiveMode ? <Radio size={14} /> : <Target size={14} />}
+              {isLiveMode ? "Live Market" : "3 trades/day"}
+            </div>
           </div>
         </div>
 
@@ -1295,9 +1487,11 @@ export function BillionaireApp() {
         <div className="grid-3">
           {filteredStocks.map((stock) => {
             const owned = holdings.find((holding) => holding.sym === stock.sym);
+            const isCustom = customStocks.some((candidate) => candidate.sym === stock.sym);
             return (
               <button className="stock-card" key={stock.sym} onClick={() => openWizard(stock)} type="button">
                 {owned ? <div className="owned-pill">Owned</div> : null}
+                {isCustom && !owned ? <div className="owned-pill custom">Custom</div> : null}
                 <div className="row">
                   <div className="ticker-badge">{stock.mascot}</div>
                   <div>
@@ -1329,6 +1523,12 @@ export function BillionaireApp() {
             );
           })}
         </div>
+        {!filteredStocks.length ? (
+          <div className="empty-state" style={{ minHeight: 180 }}>
+            <strong>No tickers found</strong>
+            <span>Add a ticker or clear the search to keep exploring.</span>
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -1518,7 +1718,7 @@ export function BillionaireApp() {
             <div>Gain / loss</div>
           </div>
           {holdings.map((holding) => {
-            const stock = getStock(holding.sym);
+            const stock = findStock(holding.sym);
             if (!stock) return null;
             const value = stock.price * holding.shares;
             const cost = holding.avgCost * holding.shares;
