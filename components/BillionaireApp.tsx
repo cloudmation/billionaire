@@ -521,6 +521,7 @@ export function BillionaireApp() {
   const [learnStyle, setLearnStyle] = useState<InvestmentStyleId | null>(null);
   const [wizard, setWizard] = useState<WizardState | null>(null);
   const [modePickerOpen, setModePickerOpen] = useState(false);
+  const [billPanelOpen, setBillPanelOpen] = useState(false);
   const [userNameDraft, setUserNameDraft] = useState(userName);
   const [onboardingStep, setOnboardingStep] = useState<"name" | "era">("name");
   const [onboardingName, setOnboardingName] = useState("");
@@ -686,6 +687,7 @@ export function BillionaireApp() {
   async function sendBill(quick?: string) {
     const content = (quick ?? billInput).trim();
     if (!content || billLoading) return;
+    setBillPanelOpen(true);
     setBillInput("");
     const outgoing = [...messages, { role: "user" as const, content }];
     setMessages(outgoing);
@@ -895,81 +897,96 @@ export function BillionaireApp() {
           {tab === "ladder" ? renderLadder() : null}
         </main>
 
-        <aside className="bill-panel">
-          <div className="bill-header">
-            <div className="row">
-              <div className="bill-avatar">
-                <Bot size={22} />
-              </div>
-              <div>
-                <div className="display" style={{ color: "var(--gold)", fontSize: 22 }}>
-                  BILL
-                </div>
-                <div className="muted" style={{ fontSize: 12 }}>
-                  AI investing coach
-                </div>
-              </div>
-              <div style={{ marginLeft: "auto" }} className="tiny-pill">
-                Live
-              </div>
-            </div>
-            <div className="quick-actions">
-              {quickActions.slice(0, 3).map((action) => (
-                <button className="quick-action" key={action} onClick={() => sendBill(action)} type="button">
-                  {action}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="chat-scroll" ref={chatScrollRef}>
-            {messages.map((message, index) => (
-              <div className={clsx("message-row", message.role === "user" && "user")} key={`${message.content}-${index}`}>
-                {message.role === "assistant" ? (
-                  <div className="bill-avatar" style={{ width: 24, height: 24 }}>
-                    <Bot size={14} />
-                  </div>
-                ) : null}
-                <div className={clsx("message", message.role)}>{message.content}</div>
-              </div>
-            ))}
-            {billLoading ? (
-              <div className="message-row">
-                <div className="bill-avatar" style={{ width: 24, height: 24 }}>
-                  <Bot size={14} />
-                </div>
-                <div className="message assistant muted">Thinking...</div>
-              </div>
-            ) : null}
-            {billQuiz ? <QuizCard compact onAnswer={(index) => answerQuiz("bill", index)} quiz={billQuiz} /> : null}
-          </div>
-
-          <form
-            className="bill-input"
-            onSubmit={(event) => {
-              event.preventDefault();
-              sendBill();
-            }}
-          >
-            <div className="chat-form">
-              <input
-                className="input"
-                onChange={(event) => setBillInput(event.target.value)}
-                placeholder="Ask BILL anything..."
-                value={billInput}
-              />
-              <button aria-label="Send message" className="icon-button" disabled={billLoading} type="submit">
-                <Send size={17} />
-              </button>
-            </div>
-          </form>
-        </aside>
+        {billPanelOpen ? <button aria-label="Close BILL panel" className="bill-drawer-backdrop" onClick={() => setBillPanelOpen(false)} type="button" /> : null}
+        {renderBillPanel()}
       </div>
+
+      <button className="bill-fab" onClick={() => setBillPanelOpen(true)} type="button">
+        <Bot size={19} />
+        Ask BILL
+      </button>
 
       {modePickerOpen ? renderModePicker() : null}
       {wizard ? renderWizard() : null}
     </div>
   );
+
+  function renderBillPanel() {
+    return (
+      <aside className={clsx("bill-panel", billPanelOpen && "open")} aria-label="BILL AI investing coach">
+        <div className="bill-header">
+          <div className="row">
+            <div className="bill-avatar">
+              <Bot size={22} />
+            </div>
+            <div>
+              <div className="display" style={{ color: "var(--gold)", fontSize: 22 }}>
+                BILL
+              </div>
+              <div className="muted" style={{ fontSize: 12 }}>
+                AI investing coach
+              </div>
+            </div>
+            <div style={{ marginLeft: "auto" }} className="tiny-pill">
+              Live
+            </div>
+            <button aria-label="Close BILL panel" className="icon-button bill-close" onClick={() => setBillPanelOpen(false)} type="button">
+              <X size={17} />
+            </button>
+          </div>
+          <div className="quick-actions">
+            {quickActions.slice(0, 3).map((action) => (
+              <button className="quick-action" key={action} onClick={() => sendBill(action)} type="button">
+                {action}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="chat-scroll" ref={chatScrollRef}>
+          {messages.map((message, index) => (
+            <div className={clsx("message-row", message.role === "user" && "user")} key={`${message.content}-${index}`}>
+              {message.role === "assistant" ? (
+                <div className="bill-avatar" style={{ width: 24, height: 24 }}>
+                  <Bot size={14} />
+                </div>
+              ) : null}
+              <div className={clsx("message", message.role)}>{message.content}</div>
+            </div>
+          ))}
+          {billLoading ? (
+            <div className="message-row">
+              <div className="bill-avatar" style={{ width: 24, height: 24 }}>
+                <Bot size={14} />
+              </div>
+              <div className="message assistant muted">Thinking...</div>
+            </div>
+          ) : null}
+          {billQuiz ? <QuizCard compact onAnswer={(index) => answerQuiz("bill", index)} quiz={billQuiz} /> : null}
+        </div>
+
+        <form
+          className="bill-input"
+          onSubmit={(event) => {
+            event.preventDefault();
+            sendBill();
+          }}
+        >
+          <div className="chat-form">
+            <input
+              className="input"
+              onChange={(event) => setBillInput(event.target.value)}
+              placeholder="Ask BILL anything..."
+              value={billInput}
+            />
+            <button aria-label="Send message" className="icon-button" disabled={billLoading} type="submit">
+              <Send size={17} />
+            </button>
+          </div>
+        </form>
+      </aside>
+    );
+  }
 
   function renderOnboarding() {
     const nameReady = onboardingName.trim().length > 0;
