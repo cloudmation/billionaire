@@ -92,6 +92,7 @@ export type QuizResult = {
   topic: string;
   correct: number;
   total: number;
+  reward: number;
   createdAt: string;
 };
 

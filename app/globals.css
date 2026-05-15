@@ -1208,6 +1208,26 @@ button:disabled {
   color: var(--red);
 }
 
+.quiz-feedback {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  margin-top: 9px;
+  padding: 0 10px;
+  border: 1px solid rgba(240, 93, 94, 0.28);
+  border-radius: 999px;
+  background: rgba(240, 93, 94, 0.1);
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.quiz-feedback.reward {
+  border-color: rgba(39, 199, 123, 0.34);
+  background: rgba(39, 199, 123, 0.14);
+  color: var(--green);
+}
+
 .ladder-row {
   display: grid;
   grid-template-columns: 52px minmax(0, 1fr);

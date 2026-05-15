@@ -572,6 +572,8 @@ export const PORTFOLIO_HISTORY = [
   { year: "2017", value: 47382, sp: 29200 }
 ];
 
+export const QUIZ_CORRECT_REWARD = 25;
+
 export const QUIZ_POOL: Record<InvestmentStyleId, Quiz> = {
   value: {
     topic: "Value Investing",

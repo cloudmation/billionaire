@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { DEFAULT_YEAR, INITIAL_HOLDINGS, STARTING_CASH } from "./game-data";
+import { DEFAULT_YEAR, INITIAL_HOLDINGS, QUIZ_CORRECT_REWARD, STARTING_CASH } from "./game-data";
 import type {
   EraYear,
   GameMode,
@@ -38,6 +38,7 @@ type GameState = GameProgressPayload & {
   completeMission: (id: string) => void;
   resetTodayProgress: () => void;
   markStudied: (style: InvestmentStyleId) => void;
+  rewardCorrectQuizAnswer: () => number;
   recordQuiz: (result: Omit<QuizResult, "id" | "createdAt">) => void;
   snapshot: () => GameProgressPayload;
 };
@@ -256,6 +257,10 @@ export const useGameStore = create<GameState>()(
         set((state) => ({
           studiedStyles: Array.from(new Set([...state.studiedStyles, style]))
         })),
+      rewardCorrectQuizAnswer: () => {
+        set((state) => ({ cash: state.cash + QUIZ_CORRECT_REWARD }));
+        return QUIZ_CORRECT_REWARD;
+      },
       recordQuiz: (result) =>
         set((state) => ({
           quizHistory: [

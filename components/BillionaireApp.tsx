@@ -44,6 +44,7 @@ import {
   PORTFOLIO_HISTORY,
   portfolioCost,
   QUIZ_POOL,
+  QUIZ_CORRECT_REWARD,
   STOCKS,
   STYLES
 } from "@/lib/game-data";
@@ -75,6 +76,7 @@ type WizardState = {
 type ActiveQuiz = Quiz & {
   current: number;
   answers: number[];
+  earned?: number;
   complete?: boolean;
 };
 
@@ -314,12 +316,13 @@ function QuizCard({
 }) {
   const question = quiz.questions[quiz.current];
   const answered = quiz.answers[quiz.current] !== undefined;
+  const answerCorrect = answered && question ? quiz.answers[quiz.current] === question.a : false;
   if (!question) {
     return (
       <div className="quiz-card">
         <div className="section-kicker gold">Quiz complete</div>
         <p className="muted" style={{ margin: "8px 0 0", fontSize: compact ? 12 : 14 }}>
-          Nice work. BILL saved this to your learning history.
+          Nice work. BILL saved this to your learning history. You earned {fmt(quiz.earned ?? 0)} cash.
         </p>
       </div>
     );
@@ -348,9 +351,14 @@ function QuizCard({
         );
       })}
       {answered ? (
-        <p className="muted" style={{ margin: "9px 0 0", fontSize: 12, lineHeight: 1.45 }}>
-          {question.exp}
-        </p>
+        <>
+          <div className={clsx("quiz-feedback", answerCorrect && "reward")}>
+            {answerCorrect ? `Correct +${fmt(QUIZ_CORRECT_REWARD)} cash` : "No cash this time. Try the next one."}
+          </div>
+          <p className="muted" style={{ margin: "7px 0 0", fontSize: 12, lineHeight: 1.45 }}>
+            {question.exp}
+          </p>
+        </>
       ) : null}
     </div>
   );
@@ -522,6 +530,7 @@ export function BillionaireApp() {
   const addCustomStock = useGameStore((state) => state.addCustomStock);
   const claimDailyCheckIn = useGameStore((state) => state.claimDailyCheckIn);
   const markStudied = useGameStore((state) => state.markStudied);
+  const rewardCorrectQuizAnswer = useGameStore((state) => state.rewardCorrectQuizAnswer);
   const recordQuiz = useGameStore((state) => state.recordQuiz);
   const resetTodayProgress = useGameStore((state) => state.resetTodayProgress);
   const snapshot = useGameStore((state) => state.snapshot);
@@ -788,9 +797,12 @@ export function BillionaireApp() {
     const setter = source === "bill" ? setBillQuiz : (quiz: ActiveQuiz | null) => updateWizard({ quiz });
     const currentQuiz = source === "bill" ? billQuiz : wizard?.quiz;
     if (!currentQuiz) return;
+    const question = currentQuiz.questions[currentQuiz.current];
+    if (!question || currentQuiz.answers[currentQuiz.current] !== undefined) return;
+    const reward = index === question.a ? rewardCorrectQuizAnswer() : 0;
     const nextAnswers = [...currentQuiz.answers];
     nextAnswers[currentQuiz.current] = index;
-    const nextQuiz = { ...currentQuiz, answers: nextAnswers };
+    const nextQuiz = { ...currentQuiz, answers: nextAnswers, earned: (currentQuiz.earned ?? 0) + reward };
     setter(nextQuiz);
     window.setTimeout(() => {
       const nextIndex = nextQuiz.current + 1;
@@ -798,7 +810,7 @@ export function BillionaireApp() {
         const correct = nextQuiz.questions.reduce((sum, question, questionIndex) => {
           return sum + (nextAnswers[questionIndex] === question.a ? 1 : 0);
         }, 0);
-        recordQuiz({ topic: nextQuiz.topic, correct, total: nextQuiz.questions.length });
+        recordQuiz({ topic: nextQuiz.topic, correct, total: nextQuiz.questions.length, reward: nextQuiz.earned ?? 0 });
         setter({ ...nextQuiz, current: nextIndex, complete: true });
       } else {
         setter({ ...nextQuiz, current: nextIndex });
