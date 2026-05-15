@@ -2,6 +2,8 @@ export type TabId = "home" | "market" | "learn" | "portfolio" | "ladder";
 
 export type GameMode = "time-machine" | "live";
 
+export type EraYear = 2000 | 2005 | 2010 | 2015 | 2020;
+
 export type InvestmentStyleId =
   | "value"
   | "growth"
@@ -99,8 +101,11 @@ export type BillMessage = {
 };
 
 export type GameProgressPayload = {
+  hasOnboarded: boolean;
   userName: string;
+  playerAge: number;
   gameMode: GameMode;
+  startYear: EraYear;
   cash: number;
   holdings: Holding[];
   completedMissions: string[];

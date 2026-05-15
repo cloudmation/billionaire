@@ -2,8 +2,9 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { INITIAL_HOLDINGS, STARTING_CASH } from "./game-data";
+import { DEFAULT_YEAR, INITIAL_HOLDINGS, STARTING_CASH } from "./game-data";
 import type {
+  EraYear,
   GameMode,
   GameProgressPayload,
   Holding,
@@ -18,6 +19,7 @@ type GameState = GameProgressPayload & {
   loadProgress: (progress: Partial<GameProgressPayload>) => void;
   setUserName: (userName: string) => void;
   setGameMode: (gameMode: GameMode) => void;
+  startNewJourney: (input: { userName: string; startYear: EraYear; playerAge?: number }) => void;
   buyStock: (input: {
     sym: string;
     shares: number;
@@ -60,11 +62,14 @@ function tradeId() {
 }
 
 const initialState: GameProgressPayload = {
-  userName: "Sophia",
+  hasOnboarded: false,
+  userName: "",
+  playerAge: 12,
   gameMode: "time-machine",
+  startYear: DEFAULT_YEAR,
   cash: STARTING_CASH,
   holdings: INITIAL_HOLDINGS,
-  completedMissions: ["analysis", "concepts"],
+  completedMissions: [],
   studiedStyles: ["value"],
   trades: [],
   quizHistory: []
@@ -80,8 +85,11 @@ export const useGameStore = create<GameState>()(
         set((state) => ({
           ...state,
           ...progress,
+          hasOnboarded: progress.hasOnboarded ?? state.hasOnboarded,
           userName: progress.userName ?? state.userName,
+          playerAge: progress.playerAge ?? state.playerAge,
           gameMode: progress.gameMode ?? state.gameMode,
+          startYear: progress.startYear ?? state.startYear,
           holdings: progress.holdings ?? state.holdings,
           completedMissions: progress.completedMissions ?? state.completedMissions,
           studiedStyles: progress.studiedStyles ?? state.studiedStyles,
@@ -90,11 +98,25 @@ export const useGameStore = create<GameState>()(
         })),
       setUserName: (userName) =>
         set({
-          userName: userName.trim() || "Sophia"
+          userName: userName.trim() || "Investor"
         }),
       setGameMode: (gameMode) =>
         set({
           gameMode
+        }),
+      startNewJourney: ({ userName, startYear, playerAge = 12 }) =>
+        set({
+          hasOnboarded: true,
+          userName: userName.trim() || "Investor",
+          playerAge,
+          gameMode: "time-machine",
+          startYear,
+          cash: STARTING_CASH,
+          holdings: [],
+          completedMissions: [],
+          studiedStyles: ["value"],
+          trades: [],
+          quizHistory: []
         }),
       buyStock: ({ sym, shares, price, style }) =>
         set((state) => {
@@ -172,8 +194,11 @@ export const useGameStore = create<GameState>()(
       snapshot: () => {
         const state = get();
         return {
+          hasOnboarded: state.hasOnboarded,
           userName: state.userName,
+          playerAge: state.playerAge,
           gameMode: state.gameMode,
+          startYear: state.startYear,
           cash: state.cash,
           holdings: state.holdings,
           completedMissions: state.completedMissions,
@@ -184,10 +209,13 @@ export const useGameStore = create<GameState>()(
       }
     }),
     {
-      name: "billionaire-progress",
+      name: "billionaire-progress-v2",
       partialize: (state) => ({
+        hasOnboarded: state.hasOnboarded,
         userName: state.userName,
+        playerAge: state.playerAge,
         gameMode: state.gameMode,
+        startYear: state.startYear,
         cash: state.cash,
         holdings: state.holdings,
         completedMissions: state.completedMissions,

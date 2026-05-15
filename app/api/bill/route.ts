@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
-import { fmt, portfolioValue, STOCKS, YEAR_SIM } from "@/lib/game-data";
+import { DEFAULT_YEAR, fmt, portfolioValue, STOCKS } from "@/lib/game-data";
 import { logBillMessages } from "@/lib/db";
 import type { BillMessage, GameProgressPayload, Stock, TabId } from "@/lib/types";
 
@@ -50,8 +50,9 @@ Tone:
 - Keep normal answers to four short sentences or fewer.
 
 Player context:
-- Time Machine year: ${YEAR_SIM}
-- Player name: ${context?.progress?.userName ?? "Sophia"}
+- Time Machine start year: ${context?.progress?.startYear ?? DEFAULT_YEAR}
+- Player name: ${context?.progress?.userName ?? "Investor"}
+- Player age: ${context?.progress?.playerAge ?? 12}
 - Game mode: ${context?.progress?.gameMode === "live" ? "Live Market" : "Time Machine"}
 - Current screen: ${context?.screen ?? "home"}
 - Net worth: ${fmt(netWorth)}

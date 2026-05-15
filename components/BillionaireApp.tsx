@@ -32,6 +32,8 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CONCEPTS,
+  DEFAULT_YEAR,
+  ERAS,
   fmt,
   fmtCompact,
   getMilestoneIndex,
@@ -45,12 +47,12 @@ import {
   portfolioValue,
   QUIZ_POOL,
   STOCKS,
-  STYLES,
-  YEAR_SIM
+  STYLES
 } from "@/lib/game-data";
 import { useGameStore } from "@/lib/store";
 import type {
   BillMessage,
+  EraYear,
   GameMode,
   GameProgressPayload,
   InvestmentStyle,
@@ -423,6 +425,14 @@ function HoldingsBars({ holdings }: { holdings: GameProgressPayload["holdings"] 
       };
     })
     .filter((item) => item.value > 0);
+  if (!items.length) {
+    return (
+      <div className="empty-state">
+        <strong>No stocks yet</strong>
+        <span>Run an analysis in Market, then make your first trade.</span>
+      </div>
+    );
+  }
   const max = Math.max(...items.map((item) => item.value), 1);
   return (
     <div className="bar-list">
@@ -446,6 +456,14 @@ function HoldingsBars({ holdings }: { holdings: GameProgressPayload["holdings"] 
 }
 
 function AllocationBars({ allocation }: { allocation: Array<{ name: string; value: number }> }) {
+  if (!allocation.length) {
+    return (
+      <div className="empty-state">
+        <strong>No allocation yet</strong>
+        <span>Your sectors will appear after your first buy.</span>
+      </div>
+    );
+  }
   const total = allocation.reduce((sum, item) => sum + item.value, 0) || 1;
   return (
     <div className="allocation-stack">
@@ -475,8 +493,11 @@ function AllocationBars({ allocation }: { allocation: Array<{ name: string; valu
 
 export function BillionaireApp() {
   const hydrated = useGameStore((state) => state.hydrated);
+  const hasOnboarded = useGameStore((state) => state.hasOnboarded);
   const userName = useGameStore((state) => state.userName);
+  const playerAge = useGameStore((state) => state.playerAge);
   const gameMode = useGameStore((state) => state.gameMode);
+  const startYear = useGameStore((state) => state.startYear);
   const cash = useGameStore((state) => state.cash);
   const holdings = useGameStore((state) => state.holdings);
   const completedMissions = useGameStore((state) => state.completedMissions);
@@ -488,6 +509,7 @@ export function BillionaireApp() {
   const sellStock = useGameStore((state) => state.sellStock);
   const setUserName = useGameStore((state) => state.setUserName);
   const setGameMode = useGameStore((state) => state.setGameMode);
+  const startNewJourney = useGameStore((state) => state.startNewJourney);
   const markStudied = useGameStore((state) => state.markStudied);
   const recordQuiz = useGameStore((state) => state.recordQuiz);
   const resetTodayProgress = useGameStore((state) => state.resetTodayProgress);
@@ -500,6 +522,9 @@ export function BillionaireApp() {
   const [wizard, setWizard] = useState<WizardState | null>(null);
   const [modePickerOpen, setModePickerOpen] = useState(false);
   const [userNameDraft, setUserNameDraft] = useState(userName);
+  const [onboardingStep, setOnboardingStep] = useState<"name" | "era">("name");
+  const [onboardingName, setOnboardingName] = useState("");
+  const [selectedEra, setSelectedEra] = useState<EraYear>(DEFAULT_YEAR);
   const [messages, setMessages] = useState<BillMessage[]>([
     {
       role: "assistant",
@@ -524,8 +549,9 @@ export function BillionaireApp() {
   const nextMilestone = MILESTONES[milestoneIndex + 1];
   const selectedWizardStyle = wizard?.style ? STYLES.find((style) => style.id === wizard.style) ?? null : null;
   const isLiveMode = gameMode === "live";
-  const modeLabel = isLiveMode ? "Live Market" : `Time Machine · ${YEAR_SIM}`;
-  const marketDateLabel = isLiveMode ? "Today" : `${YEAR_SIM}`;
+  const currentEra = ERAS.find((era) => era.year === startYear) ?? ERAS.find((era) => era.year === DEFAULT_YEAR)!;
+  const modeLabel = isLiveMode ? "Live Market" : `Time Machine · ${startYear}`;
+  const marketDateLabel = isLiveMode ? "Today" : `${startYear}`;
 
   useEffect(() => {
     const panel = chatScrollRef.current;
@@ -552,8 +578,8 @@ export function BillionaireApp() {
   }, [netWorth]);
 
   useEffect(() => {
-    if (!hydrated) return;
-    const progressKey = userName.trim() || "Sophia";
+    if (!hydrated || !hasOnboarded) return;
+    const progressKey = userName.trim() || "Investor";
     if (loadedServer.current === progressKey) return;
     loadedServer.current = progressKey;
     fetch(`/api/progress?userName=${encodeURIComponent(progressKey)}`)
@@ -562,10 +588,10 @@ export function BillionaireApp() {
         if (data.progress) loadProgress({ ...data.progress, userName: progressKey });
       })
       .catch(() => undefined);
-  }, [hydrated, loadProgress, userName]);
+  }, [hasOnboarded, hydrated, loadProgress, userName]);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || !hasOnboarded) return;
     const timer = window.setTimeout(() => {
       fetch("/api/progress", {
         method: "POST",
@@ -574,7 +600,7 @@ export function BillionaireApp() {
       }).catch(() => undefined);
     }, 450);
     return () => window.clearTimeout(timer);
-  }, [cash, holdings, completedMissions, studiedStyles, trades, quizHistory, userName, gameMode, hydrated, snapshot]);
+  }, [cash, holdings, completedMissions, studiedStyles, trades, quizHistory, userName, gameMode, startYear, hasOnboarded, hydrated, snapshot]);
 
   const sectors = useMemo(() => ["All", ...Array.from(new Set(STOCKS.map((stock) => stock.sector)))], []);
   const filteredStocks = useMemo(
@@ -600,9 +626,22 @@ export function BillionaireApp() {
   }, [holdings]);
 
   function commitUserName() {
-    const nextName = userNameDraft.trim() || "Sophia";
+    const nextName = userNameDraft.trim() || userName || "Investor";
     setUserNameDraft(nextName);
     setUserName(nextName);
+  }
+
+  function finishOnboarding() {
+    const nextName = onboardingName.trim() || "Investor";
+    startNewJourney({ userName: nextName, startYear: selectedEra, playerAge: 12 });
+    setUserNameDraft(nextName);
+    setMessages([
+      {
+        role: "assistant",
+        content: `Welcome, ${nextName}. You are starting in ${selectedEra} with $1,000. First mission: pick one company you understand and explain it in one sentence.`
+      }
+    ]);
+    setTab("home");
   }
 
   function openWizard(stock: Stock) {
@@ -720,6 +759,14 @@ export function BillionaireApp() {
     tab === "home" ? "What should I focus on today?" : null,
     "Give me a stock challenge"
   ].filter(Boolean) as string[];
+
+  if (!hydrated) {
+    return <div className="app onboarding-shell" />;
+  }
+
+  if (!hasOnboarded) {
+    return renderOnboarding();
+  }
 
   return (
     <div className="app">
@@ -924,6 +971,92 @@ export function BillionaireApp() {
     </div>
   );
 
+  function renderOnboarding() {
+    const nameReady = onboardingName.trim().length > 0;
+
+    return (
+      <div className="app onboarding-shell">
+        <section className="onboarding-panel">
+          <div className="brand" style={{ marginBottom: 42 }}>
+            <div className="brand-mark">B</div>
+            <div>
+              <div className="brand-name">BILLIONAIRE</div>
+              <div className="brand-sub">New investor setup</div>
+            </div>
+          </div>
+
+          {onboardingStep === "name" ? (
+            <div className="onboarding-stage fade-in">
+              <div className="section-kicker gold">12-year-old investor profile</div>
+              <h1 className="onboarding-title">What's your name?</h1>
+              <p className="onboarding-copy">
+                BILL will use your name, remember your progress, and coach every trade like a mini lesson.
+              </p>
+              <label className="onboarding-label">
+                Player name
+                <input
+                  autoFocus
+                  className="onboarding-input"
+                  onChange={(event) => setOnboardingName(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && nameReady) setOnboardingStep("era");
+                  }}
+                  placeholder="Sophia"
+                  value={onboardingName}
+                />
+              </label>
+              <div className="onboarding-facts">
+                <span>Age 12</span>
+                <span>$1,000 starting cash</span>
+                <span>BILL always on</span>
+              </div>
+              <button className="primary-button onboarding-cta" disabled={!nameReady} onClick={() => setOnboardingStep("era")} type="button">
+                Choose era
+                <ArrowRight size={18} />
+              </button>
+            </div>
+          ) : (
+            <div className="onboarding-stage fade-in">
+              <button className="onboarding-back" onClick={() => setOnboardingStep("name")} type="button">
+                <ChevronLeft size={18} />
+                Back
+              </button>
+              <h1 className="onboarding-title">Choose your era</h1>
+              <p className="onboarding-copy">Each starting year tells a different story.</p>
+
+              <div className="era-list">
+                {ERAS.map((era) => {
+                  const active = selectedEra === era.year;
+                  return (
+                    <button className={clsx("era-card", active && "active")} key={era.year} onClick={() => setSelectedEra(era.year)} type="button">
+                      <div className="era-year">{era.year}</div>
+                      <div className="era-info">
+                        <div className="space-between">
+                          <strong>{era.title}</strong>
+                          {era.recommended ? <span className="recommended-pill">Recommended</span> : null}
+                        </div>
+                        <p>{era.desc}</p>
+                        <div className="row">
+                          <span className={clsx("difficulty-pill", era.tone)}>{era.difficulty}</span>
+                          <span className="muted">$1,000 starting cash</span>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button className="primary-button onboarding-cta" onClick={finishOnboarding} type="button">
+                Start in {selectedEra}
+                <ArrowRight size={18} />
+              </button>
+            </div>
+          )}
+        </section>
+      </div>
+    );
+  }
+
   function renderModePicker() {
     const cards = [
       {
@@ -1024,7 +1157,7 @@ export function BillionaireApp() {
         <div className="hero-grid">
           <section className="hero-card">
             <div>
-              <div className="section-kicker gold">Your net worth · {isLiveMode ? "Live Market" : YEAR_SIM}</div>
+              <div className="section-kicker gold">Your net worth · {isLiveMode ? "Live Market" : startYear}</div>
               <div className="hero-number">{fmt(displayNetWorth || netWorth)}</div>
               <div className="row" style={{ marginTop: 8, flexWrap: "wrap" }}>
                 <span className="green" style={{ fontWeight: 900 }}>
@@ -1039,21 +1172,21 @@ export function BillionaireApp() {
           </section>
 
           <section className="card">
-            <div className="section-kicker gold">{isLiveMode ? "Market mode" : `It's now ${YEAR_SIM}`}</div>
+            <div className="section-kicker gold">{isLiveMode ? "Market mode" : `Starting era · ${startYear}`}</div>
             <h2 className="display" style={{ fontSize: 44, margin: "8px 0 4px", color: "rgba(240,199,109,0.9)" }}>
-              {isLiveMode ? "LIVE" : YEAR_SIM}
+              {isLiveMode ? "LIVE" : startYear}
             </h2>
             <p style={{ margin: 0, lineHeight: 1.65 }}>
               {isLiveMode
                 ? "Live Market mode keeps the game focused on today: prices, watchlist decisions, and BILL's current-market coaching."
-                : "iPhone X launches, streaming becomes mainstream, and chip stocks are quietly setting up for a massive decade."}
+                : currentEra.desc}
             </p>
             <div className="panel-block" style={{ marginTop: 15, padding: 12 }}>
               <div className="section-kicker">BILL's note</div>
               <p className="muted" style={{ margin: "7px 0 0", lineHeight: 1.55, fontSize: 13 }}>
                 {isLiveMode
                   ? "Use the same discipline as Time Machine: pick one lens, name the risk, then decide whether the trade deserves capital."
-                  : "Your Nvidia position is already a monster winner. The question is whether you understand the business well enough to hold through volatility."}
+                  : `${currentEra.title} is your first investing backdrop. Start slowly: learn one concept, analyze one stock, then decide.`}
               </p>
             </div>
           </section>

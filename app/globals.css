@@ -75,6 +75,185 @@ button:disabled {
   background-size: 48px 48px;
 }
 
+.onboarding-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  overflow: auto;
+  padding: 40px;
+}
+
+.onboarding-panel {
+  width: min(920px, 100%);
+}
+
+.onboarding-stage {
+  display: grid;
+  gap: 22px;
+}
+
+.onboarding-title {
+  margin: 0;
+  color: var(--gold);
+  font-family: "Bebas Neue", Inter, sans-serif;
+  font-size: clamp(56px, 7vw, 78px);
+  letter-spacing: 0.08em;
+  line-height: 0.95;
+}
+
+.onboarding-copy {
+  max-width: 720px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 22px;
+  line-height: 1.45;
+}
+
+.onboarding-label {
+  display: grid;
+  gap: 10px;
+  max-width: 520px;
+  color: var(--muted-2);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.onboarding-input {
+  height: 64px;
+  border: 1px solid rgba(215, 165, 49, 0.35);
+  border-radius: 18px;
+  background: #101112;
+  color: var(--text);
+  font-size: 26px;
+  font-weight: 900;
+  outline: none;
+  padding: 0 18px;
+}
+
+.onboarding-input:focus {
+  border-color: var(--gold);
+}
+
+.onboarding-facts {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.onboarding-facts span {
+  min-height: 34px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.onboarding-cta {
+  width: fit-content;
+  min-height: 52px;
+}
+
+.onboarding-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  border: 0;
+  background: transparent;
+  color: var(--muted-2);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.era-list {
+  display: grid;
+  gap: 20px;
+}
+
+.era-card {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+  min-height: 138px;
+  padding: 24px 34px;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: #101112;
+  color: var(--text);
+  text-align: left;
+  transition: 160ms ease;
+}
+
+.era-card:hover,
+.era-card.active {
+  border-color: rgba(215, 165, 49, 0.78);
+  background: #141107;
+}
+
+.era-year {
+  color: var(--text);
+  font-family: "Bebas Neue", Inter, sans-serif;
+  font-size: 56px;
+  letter-spacing: 0.08em;
+}
+
+.era-card.active .era-year {
+  color: var(--gold);
+}
+
+.era-info strong {
+  font-size: 24px;
+}
+
+.era-info p {
+  margin: 10px 0 14px;
+  color: var(--muted-2);
+  font-size: 19px;
+  line-height: 1.35;
+}
+
+.difficulty-pill,
+.recommended-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border-radius: 999px;
+  padding: 0 13px;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.difficulty-pill.green {
+  border: 1px solid rgba(39, 199, 123, 0.55);
+  background: rgba(39, 199, 123, 0.12);
+  color: var(--green);
+}
+
+.difficulty-pill.gold {
+  border: 1px solid rgba(215, 165, 49, 0.55);
+  background: rgba(215, 165, 49, 0.12);
+  color: var(--gold-2);
+}
+
+.difficulty-pill.red {
+  border: 1px solid rgba(240, 93, 94, 0.55);
+  background: rgba(240, 93, 94, 0.12);
+  color: var(--red);
+}
+
+.recommended-pill {
+  background: var(--gold);
+  color: #080808;
+}
+
 .topbar {
   position: sticky;
   top: 0;
@@ -611,6 +790,23 @@ button:disabled {
   border-radius: 3px;
 }
 
+.empty-state {
+  display: grid;
+  height: 100%;
+  place-content: center;
+  gap: 6px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.empty-state strong {
+  color: var(--text);
+}
+
+.empty-state span {
+  font-size: 13px;
+}
+
 .table {
   overflow: hidden;
   border: 1px solid var(--line);
@@ -1064,6 +1260,26 @@ button:disabled {
   .mode-card-head {
     grid-template-columns: 48px 1fr;
     gap: 16px;
+  }
+
+  .onboarding-shell {
+    padding: 22px;
+    place-items: start center;
+  }
+
+  .onboarding-title {
+    font-size: 48px;
+    letter-spacing: 0.06em;
+  }
+
+  .era-card {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 22px;
+  }
+
+  .era-year {
+    font-size: 46px;
   }
 
   .shell {

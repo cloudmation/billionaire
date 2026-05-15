@@ -4,7 +4,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "BILLIONAIRE",
-  description: "A web investing game with BILL, an AI investing coach."
+  description: "A web investing game with BILL, an AI investing coach.",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg"
+  }
 };
 
 export const viewport: Viewport = {

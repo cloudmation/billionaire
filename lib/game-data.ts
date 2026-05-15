@@ -8,8 +8,51 @@ import type {
   Stock
 } from "./types";
 
-export const YEAR_SIM = 2017;
-export const STARTING_CASH = 8241.17;
+export const DEFAULT_YEAR = 2010;
+export const STARTING_CASH = 1000;
+
+export const ERAS = [
+  {
+    year: 2000,
+    title: "Dot-com Bubble",
+    desc: "The internet changes everything — then crashes.",
+    difficulty: "Hard",
+    tone: "red",
+    recommended: false
+  },
+  {
+    year: 2005,
+    title: "Pre-Crisis Calm",
+    desc: "Markets are up. But 2008 is coming.",
+    difficulty: "Medium",
+    tone: "gold",
+    recommended: false
+  },
+  {
+    year: 2010,
+    title: "Recovery Begins",
+    desc: "Apple, Amazon & Netflix are just warming up.",
+    difficulty: "Easy",
+    tone: "green",
+    recommended: true
+  },
+  {
+    year: 2015,
+    title: "Mobile Era",
+    desc: "Streaming wars, Tesla rises, Bitcoin emerges.",
+    difficulty: "Medium",
+    tone: "gold",
+    recommended: false
+  },
+  {
+    year: 2020,
+    title: "COVID Crash",
+    desc: "Markets crater then explode. Wild ride.",
+    difficulty: "Hard",
+    tone: "red",
+    recommended: false
+  }
+] as const;
 
 export const STOCKS: Stock[] = [
   {
@@ -477,12 +520,7 @@ export const CONCEPTS: Record<InvestmentStyleId, Concept[]> = {
   ]
 };
 
-export const INITIAL_HOLDINGS: Holding[] = [
-  { sym: "AAPL", shares: 47, avgCost: 91.42 },
-  { sym: "NVDA", shares: 12, avgCost: 312.18 },
-  { sym: "AMZN", shares: 8, avgCost: 142.33 },
-  { sym: "TSLA", shares: 22, avgCost: 108.61 }
-];
+export const INITIAL_HOLDINGS: Holding[] = [];
 
 export const MISSIONS = [
   {

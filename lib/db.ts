@@ -9,14 +9,14 @@ async function ensureDataDir() {
   await mkdir(dataDir, { recursive: true });
 }
 
-function progressFile(userName = "Sophia") {
+function progressFile(userName = "Investor") {
   const safeName = userName
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9_-]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 60);
-  return path.join(dataDir, `progress-${safeName || "sophia"}.json`);
+  return path.join(dataDir, `progress-${safeName || "investor"}.json`);
 }
 
 export async function readProgress(userName?: string) {
