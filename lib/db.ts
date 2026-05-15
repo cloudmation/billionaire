@@ -3,16 +3,25 @@ import path from "node:path";
 import type { BillMessage, GameProgressPayload } from "./types";
 
 const dataDir = path.join(process.cwd(), ".data");
-const progressFile = path.join(dataDir, "progress.json");
 const billLogFile = path.join(dataDir, "bill-interactions.jsonl");
 
 async function ensureDataDir() {
   await mkdir(dataDir, { recursive: true });
 }
 
-export async function readProgress() {
+function progressFile(userName = "Sophia") {
+  const safeName = userName
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+  return path.join(dataDir, `progress-${safeName || "sophia"}.json`);
+}
+
+export async function readProgress(userName?: string) {
   try {
-    const payload = await readFile(progressFile, "utf8");
+    const payload = await readFile(progressFile(userName), "utf8");
     return JSON.parse(payload) as GameProgressPayload;
   } catch {
     return null;
@@ -21,7 +30,7 @@ export async function readProgress() {
 
 export async function writeProgress(progress: GameProgressPayload) {
   await ensureDataDir();
-  await writeFile(progressFile, JSON.stringify(progress, null, 2), "utf8");
+  await writeFile(progressFile(progress.userName), JSON.stringify(progress, null, 2), "utf8");
 }
 
 export async function logBillMessages(messages: BillMessage[], screen?: string) {

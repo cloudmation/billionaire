@@ -1,5 +1,7 @@
 export type TabId = "home" | "market" | "learn" | "portfolio" | "ladder";
 
+export type GameMode = "time-machine" | "live";
+
 export type InvestmentStyleId =
   | "value"
   | "growth"
@@ -97,6 +99,8 @@ export type BillMessage = {
 };
 
 export type GameProgressPayload = {
+  userName: string;
+  gameMode: GameMode;
   cash: number;
   holdings: Holding[];
   completedMissions: string[];

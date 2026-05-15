@@ -10,6 +10,7 @@ import {
   BriefcaseBusiness,
   Check,
   ChevronLeft,
+  Clock3,
   Home,
   LineChart,
   Lock,
@@ -22,6 +23,9 @@ import {
   Sparkles,
   Target,
   Trophy,
+  Radio,
+  RotateCcw,
+  User,
   X,
   Zap
 } from "lucide-react";
@@ -47,6 +51,7 @@ import {
 import { useGameStore } from "@/lib/store";
 import type {
   BillMessage,
+  GameMode,
   GameProgressPayload,
   InvestmentStyle,
   InvestmentStyleId,
@@ -470,6 +475,8 @@ function AllocationBars({ allocation }: { allocation: Array<{ name: string; valu
 
 export function BillionaireApp() {
   const hydrated = useGameStore((state) => state.hydrated);
+  const userName = useGameStore((state) => state.userName);
+  const gameMode = useGameStore((state) => state.gameMode);
   const cash = useGameStore((state) => state.cash);
   const holdings = useGameStore((state) => state.holdings);
   const completedMissions = useGameStore((state) => state.completedMissions);
@@ -479,8 +486,11 @@ export function BillionaireApp() {
   const loadProgress = useGameStore((state) => state.loadProgress);
   const buyStock = useGameStore((state) => state.buyStock);
   const sellStock = useGameStore((state) => state.sellStock);
+  const setUserName = useGameStore((state) => state.setUserName);
+  const setGameMode = useGameStore((state) => state.setGameMode);
   const markStudied = useGameStore((state) => state.markStudied);
   const recordQuiz = useGameStore((state) => state.recordQuiz);
+  const resetTodayProgress = useGameStore((state) => state.resetTodayProgress);
   const snapshot = useGameStore((state) => state.snapshot);
 
   const [tab, setTab] = useState<TabId>("home");
@@ -488,6 +498,8 @@ export function BillionaireApp() {
   const [search, setSearch] = useState("");
   const [learnStyle, setLearnStyle] = useState<InvestmentStyleId | null>(null);
   const [wizard, setWizard] = useState<WizardState | null>(null);
+  const [modePickerOpen, setModePickerOpen] = useState(false);
+  const [userNameDraft, setUserNameDraft] = useState(userName);
   const [messages, setMessages] = useState<BillMessage[]>([
     {
       role: "assistant",
@@ -499,7 +511,7 @@ export function BillionaireApp() {
   const [billLoading, setBillLoading] = useState(false);
   const [billQuiz, setBillQuiz] = useState<ActiveQuiz | null>(null);
   const [displayNetWorth, setDisplayNetWorth] = useState(0);
-  const loadedServer = useRef(false);
+  const loadedServer = useRef<string | null>(null);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
 
   const stockValue = useMemo(() => portfolioValue(holdings), [holdings]);
@@ -511,6 +523,9 @@ export function BillionaireApp() {
   const currentMilestone = MILESTONES[milestoneIndex];
   const nextMilestone = MILESTONES[milestoneIndex + 1];
   const selectedWizardStyle = wizard?.style ? STYLES.find((style) => style.id === wizard.style) ?? null : null;
+  const isLiveMode = gameMode === "live";
+  const modeLabel = isLiveMode ? "Live Market" : `Time Machine · ${YEAR_SIM}`;
+  const marketDateLabel = isLiveMode ? "Today" : `${YEAR_SIM}`;
 
   useEffect(() => {
     const panel = chatScrollRef.current;
@@ -537,15 +552,17 @@ export function BillionaireApp() {
   }, [netWorth]);
 
   useEffect(() => {
-    if (!hydrated || loadedServer.current) return;
-    loadedServer.current = true;
-    fetch("/api/progress")
+    if (!hydrated) return;
+    const progressKey = userName.trim() || "Sophia";
+    if (loadedServer.current === progressKey) return;
+    loadedServer.current = progressKey;
+    fetch(`/api/progress?userName=${encodeURIComponent(progressKey)}`)
       .then((response) => response.json())
       .then((data: { progress?: GameProgressPayload | null }) => {
-        if (data.progress) loadProgress(data.progress);
+        if (data.progress) loadProgress({ ...data.progress, userName: progressKey });
       })
       .catch(() => undefined);
-  }, [hydrated, loadProgress]);
+  }, [hydrated, loadProgress, userName]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -557,7 +574,7 @@ export function BillionaireApp() {
       }).catch(() => undefined);
     }, 450);
     return () => window.clearTimeout(timer);
-  }, [cash, holdings, completedMissions, studiedStyles, trades, quizHistory, hydrated, snapshot]);
+  }, [cash, holdings, completedMissions, studiedStyles, trades, quizHistory, userName, gameMode, hydrated, snapshot]);
 
   const sectors = useMemo(() => ["All", ...Array.from(new Set(STOCKS.map((stock) => stock.sector)))], []);
   const filteredStocks = useMemo(
@@ -581,6 +598,12 @@ export function BillionaireApp() {
     });
     return Array.from(bySector.entries()).map(([name, value]) => ({ name, value }));
   }, [holdings]);
+
+  function commitUserName() {
+    const nextName = userNameDraft.trim() || "Sophia";
+    setUserNameDraft(nextName);
+    setUserName(nextName);
+  }
 
   function openWizard(stock: Stock) {
     setWizard({
@@ -684,6 +707,12 @@ export function BillionaireApp() {
     });
   }
 
+  function chooseMode(nextMode: GameMode) {
+    setGameMode(nextMode);
+    setModePickerOpen(false);
+    if (nextMode === "live") setTab("market");
+  }
+
   const quickActions = [
     tab === "market" ? "Explain the P/E ratio using the stock list" : null,
     tab === "learn" ? "Quiz me on value investing" : null,
@@ -703,15 +732,30 @@ export function BillionaireApp() {
           </div>
         </div>
         <div className="milestone-strip">
-          <div className="mode-pill">
-            <Sparkles size={14} />
-            Time Machine · {YEAR_SIM}
-          </div>
+          <button className="mode-pill mode-button" onClick={() => setModePickerOpen(true)} type="button">
+            {isLiveMode ? <Radio size={14} /> : <Sparkles size={14} />}
+            {modeLabel}
+          </button>
           <div className="progress-rail" aria-label="Milestone progress">
             <div className="progress-fill" style={{ width: `${milestoneProgress * 100}%` }} />
           </div>
           <div className="tiny-pill">{nextMilestone ? nextMilestone.label : "Top"}</div>
         </div>
+        <label className="user-chip">
+          <User size={14} />
+          <span>Player</span>
+          <input
+            aria-label="Player name"
+            onBlur={commitUserName}
+            onChange={(event) => setUserNameDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.currentTarget.blur();
+              }
+            }}
+            value={userNameDraft}
+          />
+        </label>
         <div className="stat-stack">
           <div className="stat-label">Net worth</div>
           <div className="stat-value">{fmt(displayNetWorth || netWorth)}</div>
@@ -745,7 +789,13 @@ export function BillionaireApp() {
           </nav>
 
           <div className="side-section">
-            <div className="section-kicker">Today's progress</div>
+            <div className="space-between">
+              <div className="section-kicker">Today's progress</div>
+              <button className="text-button" onClick={resetTodayProgress} type="button">
+                <RotateCcw size={12} />
+                Reset
+              </button>
+            </div>
             {MISSIONS.map((mission) => {
               const done = completedMissions.includes(mission.id);
               return (
@@ -869,9 +919,94 @@ export function BillionaireApp() {
         </aside>
       </div>
 
+      {modePickerOpen ? renderModePicker() : null}
       {wizard ? renderWizard() : null}
     </div>
   );
+
+  function renderModePicker() {
+    const cards = [
+      {
+        id: "time-machine" as const,
+        icon: Clock3,
+        title: "Time Machine",
+        subtitle: "Start in 2010 with real market history",
+        bullets: [
+          "1 day = 1 year of historical market data",
+          "Discover what $1K in Apple 2010 becomes",
+          "Feel every crash and every comeback"
+        ]
+      },
+      {
+        id: "live" as const,
+        icon: Radio,
+        title: "Live Market",
+        subtitle: "Today's market lens with BILL coaching",
+        bullets: [
+          "Use the current watchlist as today's market board",
+          "3 trades per day — choose wisely",
+          "BILL answers in live-market context"
+        ]
+      }
+    ];
+
+    return (
+      <div className="modal-backdrop" role="dialog" aria-modal="true">
+        <section className="mode-dialog">
+          <div className="space-between" style={{ marginBottom: 20 }}>
+            <div>
+              <div className="section-kicker gold">Choose mode</div>
+              <h2 className="page-title" style={{ marginTop: 4 }}>
+                Market Mode
+              </h2>
+            </div>
+            <button aria-label="Close mode picker" className="icon-button" onClick={() => setModePickerOpen(false)} type="button">
+              <X size={18} />
+            </button>
+          </div>
+          <div className="mode-card-stack">
+            {cards.map((card) => {
+              const Icon = card.icon;
+              const active = gameMode === card.id;
+              return (
+                <button
+                  className={clsx("mode-card", active && "active")}
+                  key={card.id}
+                  onClick={() => chooseMode(card.id)}
+                  type="button"
+                >
+                  <div className="mode-card-head">
+                    <div className="mode-card-icon">
+                      <Icon size={34} />
+                    </div>
+                    <div>
+                      <div className="display" style={{ color: active ? "var(--gold-2)" : "var(--text)", fontSize: 42 }}>
+                        {card.title}
+                      </div>
+                      <p className="muted" style={{ margin: 0, fontSize: 18 }}>
+                        {card.subtitle}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mode-bullets">
+                    {card.bullets.map((bullet) => (
+                      <div className="mode-bullet" key={bullet}>
+                        <ArrowRight size={18} />
+                        <span>{bullet}</span>
+                      </div>
+                    ))}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <p className="muted" style={{ margin: "20px 0 0", textAlign: "center" }}>
+            New to investing? Start with Time Machine.
+          </p>
+        </section>
+      </div>
+    );
+  }
 
   function renderHome() {
     const statCards = [
@@ -889,7 +1024,7 @@ export function BillionaireApp() {
         <div className="hero-grid">
           <section className="hero-card">
             <div>
-              <div className="section-kicker gold">Your net worth · {YEAR_SIM}</div>
+              <div className="section-kicker gold">Your net worth · {isLiveMode ? "Live Market" : YEAR_SIM}</div>
               <div className="hero-number">{fmt(displayNetWorth || netWorth)}</div>
               <div className="row" style={{ marginTop: 8, flexWrap: "wrap" }}>
                 <span className="green" style={{ fontWeight: 900 }}>
@@ -904,17 +1039,21 @@ export function BillionaireApp() {
           </section>
 
           <section className="card">
-            <div className="section-kicker gold">It's now {YEAR_SIM}</div>
+            <div className="section-kicker gold">{isLiveMode ? "Market mode" : `It's now ${YEAR_SIM}`}</div>
             <h2 className="display" style={{ fontSize: 44, margin: "8px 0 4px", color: "rgba(240,199,109,0.9)" }}>
-              2017
+              {isLiveMode ? "LIVE" : YEAR_SIM}
             </h2>
             <p style={{ margin: 0, lineHeight: 1.65 }}>
-              iPhone X launches, streaming becomes mainstream, and chip stocks are quietly setting up for a massive decade.
+              {isLiveMode
+                ? "Live Market mode keeps the game focused on today: prices, watchlist decisions, and BILL's current-market coaching."
+                : "iPhone X launches, streaming becomes mainstream, and chip stocks are quietly setting up for a massive decade."}
             </p>
             <div className="panel-block" style={{ marginTop: 15, padding: 12 }}>
               <div className="section-kicker">BILL's note</div>
               <p className="muted" style={{ margin: "7px 0 0", lineHeight: 1.55, fontSize: 13 }}>
-                Your Nvidia position is already a monster winner. The question is whether you understand the business well enough to hold through volatility.
+                {isLiveMode
+                  ? "Use the same discipline as Time Machine: pick one lens, name the risk, then decide whether the trade deserves capital."
+                  : "Your Nvidia position is already a monster winner. The question is whether you understand the business well enough to hold through volatility."}
               </p>
             </div>
           </section>
@@ -935,7 +1074,10 @@ export function BillionaireApp() {
           <section className="card">
             <div className="space-between">
               <div className="section-kicker">Daily missions</div>
-              <Target size={18} color="var(--green)" />
+              <button className="text-button" onClick={resetTodayProgress} type="button">
+                <RotateCcw size={12} />
+                Reset today
+              </button>
             </div>
             {MISSIONS.map((mission) => {
               const done = completedMissions.includes(mission.id);
@@ -975,10 +1117,10 @@ export function BillionaireApp() {
     return (
       <div className="fade-in">
         <div className="space-between" style={{ alignItems: "flex-start", marginBottom: 4 }}>
-          <SectionHeader title={`Stock Market · ${YEAR_SIM}`} subtitle="Click any company to run the Analysis Wizard before trading." />
+          <SectionHeader title={`Stock Market · ${marketDateLabel}`} subtitle="Click any company to run the Analysis Wizard before trading." />
           <div className="mode-pill">
-            <Target size={14} />
-            3 trades/day
+            {isLiveMode ? <Radio size={14} /> : <Target size={14} />}
+            {isLiveMode ? "Live Market" : "3 trades/day"}
           </div>
         </div>
 

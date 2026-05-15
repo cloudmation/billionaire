@@ -6,11 +6,13 @@ A desktop-first investing game where a young player learns by analyzing stocks b
 
 - Next.js App Router web app with a persistent top bar, left navigation, main content, and BILL panel.
 - Home, Market, Learn, Portfolio, and Ladder screens.
+- Time Machine and Live Market mode picker.
+- Player progress tracked by user name.
 - Five-step Analysis Wizard for every stock trade.
 - Value and Growth learning modules, with preview data for the other investing styles.
 - BILL chat route backed by OpenAI through `/api/bill`.
 - Structured quiz parsing with inline quiz cards.
-- Local file-backed progress and BILL interaction persistence under `.data/`.
+- Local file-backed progress and BILL interaction persistence under `.data/`, keyed per player name.
 
 ## Run Locally
 

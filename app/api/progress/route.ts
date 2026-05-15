@@ -4,8 +4,9 @@ import type { GameProgressPayload } from "@/lib/types";
 
 export const runtime = "nodejs";
 
-export async function GET() {
-  return NextResponse.json({ progress: await readProgress() });
+export async function GET(request: Request) {
+  const userName = new URL(request.url).searchParams.get("userName") ?? undefined;
+  return NextResponse.json({ progress: await readProgress(userName) });
 }
 
 export async function POST(request: Request) {

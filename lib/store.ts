@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { INITIAL_HOLDINGS, STARTING_CASH } from "./game-data";
 import type {
+  GameMode,
   GameProgressPayload,
   Holding,
   InvestmentStyleId,
@@ -15,6 +16,8 @@ type GameState = GameProgressPayload & {
   hydrated: boolean;
   setHydrated: () => void;
   loadProgress: (progress: Partial<GameProgressPayload>) => void;
+  setUserName: (userName: string) => void;
+  setGameMode: (gameMode: GameMode) => void;
   buyStock: (input: {
     sym: string;
     shares: number;
@@ -28,6 +31,7 @@ type GameState = GameProgressPayload & {
     style: InvestmentStyleId | "quick";
   }) => void;
   completeMission: (id: string) => void;
+  resetTodayProgress: () => void;
   markStudied: (style: InvestmentStyleId) => void;
   recordQuiz: (result: Omit<QuizResult, "id" | "createdAt">) => void;
   snapshot: () => GameProgressPayload;
@@ -56,6 +60,8 @@ function tradeId() {
 }
 
 const initialState: GameProgressPayload = {
+  userName: "Sophia",
+  gameMode: "time-machine",
   cash: STARTING_CASH,
   holdings: INITIAL_HOLDINGS,
   completedMissions: ["analysis", "concepts"],
@@ -74,12 +80,22 @@ export const useGameStore = create<GameState>()(
         set((state) => ({
           ...state,
           ...progress,
+          userName: progress.userName ?? state.userName,
+          gameMode: progress.gameMode ?? state.gameMode,
           holdings: progress.holdings ?? state.holdings,
           completedMissions: progress.completedMissions ?? state.completedMissions,
           studiedStyles: progress.studiedStyles ?? state.studiedStyles,
           trades: progress.trades ?? state.trades,
           quizHistory: progress.quizHistory ?? state.quizHistory
         })),
+      setUserName: (userName) =>
+        set({
+          userName: userName.trim() || "Sophia"
+        }),
+      setGameMode: (gameMode) =>
+        set({
+          gameMode
+        }),
       buyStock: ({ sym, shares, price, style }) =>
         set((state) => {
           const affordableShares = Math.floor(state.cash / price);
@@ -129,6 +145,15 @@ export const useGameStore = create<GameState>()(
         set((state) => ({
           completedMissions: Array.from(new Set([...state.completedMissions, id]))
         })),
+      resetTodayProgress: () =>
+        set((state) => {
+          const today = new Date().toISOString().slice(0, 10);
+          return {
+            completedMissions: [],
+            trades: state.trades.filter((trade) => trade.createdAt.slice(0, 10) !== today),
+            quizHistory: state.quizHistory.filter((quiz) => quiz.createdAt.slice(0, 10) !== today)
+          };
+        }),
       markStudied: (style) =>
         set((state) => ({
           studiedStyles: Array.from(new Set([...state.studiedStyles, style]))
@@ -147,6 +172,8 @@ export const useGameStore = create<GameState>()(
       snapshot: () => {
         const state = get();
         return {
+          userName: state.userName,
+          gameMode: state.gameMode,
           cash: state.cash,
           holdings: state.holdings,
           completedMissions: state.completedMissions,
@@ -159,6 +186,8 @@ export const useGameStore = create<GameState>()(
     {
       name: "billionaire-progress",
       partialize: (state) => ({
+        userName: state.userName,
+        gameMode: state.gameMode,
         cash: state.cash,
         holdings: state.holdings,
         completedMissions: state.completedMissions,

@@ -51,6 +51,8 @@ Tone:
 
 Player context:
 - Time Machine year: ${YEAR_SIM}
+- Player name: ${context?.progress?.userName ?? "Sophia"}
+- Game mode: ${context?.progress?.gameMode === "live" ? "Live Market" : "Time Machine"}
 - Current screen: ${context?.screen ?? "home"}
 - Net worth: ${fmt(netWorth)}
 - Cash: ${fmt(context?.progress?.cash ?? 0)}
