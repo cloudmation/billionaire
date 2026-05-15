@@ -12,7 +12,7 @@ A desktop-first investing game where a young player learns by analyzing stocks b
 - Value and Growth learning modules, with preview data for the other investing styles.
 - BILL chat route backed by OpenAI through `/api/bill`.
 - Structured quiz parsing with inline quiz cards.
-- Local file-backed progress and BILL interaction persistence under `.data/`, keyed per player name.
+- Neon Postgres progress and BILL interaction persistence when `DATABASE_URL` is set, with a local `.data/` fallback for development.
 
 ## Run Locally
 
@@ -30,9 +30,12 @@ Create `.env` from `.env.example` and set:
 ```bash
 OpenAI_API_TOKEN=...
 OPENAI_MODEL=gpt-5.2
+DATABASE_URL=postgresql://...
 ```
 
 `OPENAI_API_TOKEN`, `OpenAI_API_TOKEN`, and `OPENAI_API_KEY` are all supported by the server route.
+
+`DATABASE_URL` should be the pooled Neon Postgres connection string from the Neon dashboard. If it is omitted, the app stores progress locally in `.data/`.
 
 ## Checks
 
