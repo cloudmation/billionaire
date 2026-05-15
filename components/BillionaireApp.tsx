@@ -56,6 +56,7 @@ import type {
   GameProgressPayload,
   InvestmentStyle,
   InvestmentStyleId,
+  LeaderboardEntry,
   Quiz,
   QuizQuestion,
   Stock,
@@ -123,6 +124,22 @@ function extractQuiz(raw: string): { text: string; quiz: ActiveQuiz | null } {
   } catch {
     return { text: raw.replace(/\[QUIZ\][\s\S]*?\[\/QUIZ\]/, "").trim(), quiz: null };
   }
+}
+
+function leaderboardKey(name: string) {
+  return name.trim().toLowerCase() || "investor";
+}
+
+function relativeTime(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "just now";
+  const minutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60_000));
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  return `${days}d ago`;
 }
 
 function styleMetrics(stock: Stock, styleId: InvestmentStyleId) {
@@ -565,6 +582,7 @@ export function BillionaireApp() {
   const [billInput, setBillInput] = useState("");
   const [billLoading, setBillLoading] = useState(false);
   const [billQuiz, setBillQuiz] = useState<ActiveQuiz | null>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [displayNetWorth, setDisplayNetWorth] = useState(0);
   const loadedServer = useRef<string | null>(null);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
@@ -601,6 +619,27 @@ export function BillionaireApp() {
   const nextCheckInStreak = getNextCheckInStreak(lastCheckInDate, checkInStreak);
   const availableCheckInReward = getDailyCheckInReward(nextCheckInStreak);
   const tomorrowCheckInReward = getDailyCheckInReward((checkedInToday ? Math.max(1, checkInStreak) : nextCheckInStreak) + 1);
+  const leaderboardRows = useMemo(() => {
+    const localEntry: LeaderboardEntry = {
+      rank: 0,
+      userName: userName.trim() || "Investor",
+      netWorth,
+      cash,
+      stockValue,
+      holdingsCount: holdings.length,
+      completedMissions: completedMissions.length,
+      quizCorrect: quizHistory.reduce((sum, quiz) => sum + quiz.correct, 0),
+      checkInStreak,
+      updatedAt: new Date().toISOString()
+    };
+    const byUser = new Map<string, LeaderboardEntry>();
+    leaderboard.forEach((entry) => byUser.set(leaderboardKey(entry.userName), entry));
+    byUser.set(leaderboardKey(localEntry.userName), localEntry);
+    return Array.from(byUser.values())
+      .sort((left, right) => right.netWorth - left.netWorth || left.userName.localeCompare(right.userName))
+      .slice(0, 25)
+      .map((entry, index) => ({ ...entry, rank: index + 1 }));
+  }, [cash, checkInStreak, completedMissions.length, holdings.length, leaderboard, netWorth, quizHistory, stockValue, userName]);
 
   useEffect(() => {
     const panel = chatScrollRef.current;
@@ -666,6 +705,22 @@ export function BillionaireApp() {
     hydrated,
     snapshot
   ]);
+
+  useEffect(() => {
+    if (!hydrated || !hasOnboarded || tab !== "ladder") return;
+    let active = true;
+    fetch("/api/leaderboard?limit=25")
+      .then((response) => response.json())
+      .then((data: { leaders?: LeaderboardEntry[] }) => {
+        if (active) setLeaderboard(data.leaders ?? []);
+      })
+      .catch(() => {
+        if (active) setLeaderboard([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [hasOnboarded, hydrated, tab, cash, holdings, completedMissions, quizHistory, checkInStreak, customStocks]);
 
   const sectors = useMemo(() => ["All", ...Array.from(new Set(allStocks.map((stock) => stock.sector)))], [allStocks]);
   const filteredStocks = useMemo(
@@ -1829,43 +1884,97 @@ export function BillionaireApp() {
   }
 
   function renderLadder() {
+    const myRank = leaderboardRows.find((entry) => leaderboardKey(entry.userName) === leaderboardKey(userName))?.rank ?? 1;
     return (
-      <div className="fade-in" style={{ maxWidth: 760 }}>
-        <SectionHeader title="The Billion Dollar Ladder" subtitle="Wealth milestones unlock new styles, tools, and harder questions." />
-        {MILESTONES.map((milestone, index) => {
-          const reached = netWorth >= milestone.amount;
-          const current = index === milestoneIndex;
-          return (
-            <div className="ladder-row" key={milestone.label}>
-              <div className={clsx("ladder-node", reached && "reached")}>{reached ? milestone.badge : <Lock size={18} />}</div>
-              <div className="card" style={{ borderColor: current ? "rgba(215,165,49,0.68)" : undefined }}>
-                <div className="space-between">
-                  <div>
-                    <span className="display" style={{ color: reached ? "var(--gold-2)" : "var(--text)", fontSize: 30 }}>
-                      {milestone.label}
-                    </span>
-                    <span className="muted"> · {milestone.title}</span>
-                  </div>
-                  {current ? <span className="mode-pill">You are here</span> : reached ? <span className="green" style={{ fontWeight: 900 }}>Reached</span> : null}
-                </div>
-                {current ? (
-                  <div style={{ marginTop: 12 }}>
-                    <div className="space-between muted" style={{ fontSize: 12, marginBottom: 6 }}>
-                      <span>{fmt(netWorth)}</span>
-                      <span>{nextMilestone ? `Next: ${nextMilestone.label}` : "Top rung"}</span>
-                    </div>
-                    <div className="progress-rail">
-                      <div className="progress-fill" style={{ width: `${milestoneProgress * 100}%` }} />
-                    </div>
-                  </div>
-                ) : null}
-                <p className="muted" style={{ margin: "10px 0 0", fontSize: 13 }}>
-                  Unlocks: {milestone.unlocks}
-                </p>
+      <div className="fade-in stack" style={{ maxWidth: 940 }}>
+        <SectionHeader title="Leaderboard" subtitle="See how every saved investor is climbing the game." />
+        <section className="card leaderboard-card">
+          <div className="space-between leaderboard-summary">
+            <div>
+              <div className="section-kicker gold">Your rank</div>
+              <div className="display" style={{ color: "var(--gold-2)", fontSize: 44 }}>
+                #{myRank}
               </div>
             </div>
-          );
-        })}
+            <div className="leaderboard-score">
+              <span className="muted">Net worth</span>
+              <strong>{fmt(netWorth)}</strong>
+            </div>
+          </div>
+
+          <div className="leaderboard-list">
+            <div className="leaderboard-row leaderboard-head">
+              <span>Rank</span>
+              <span>Investor</span>
+              <span>Net worth</span>
+              <span>Progress</span>
+            </div>
+            {leaderboardRows.map((entry) => {
+              const isYou = leaderboardKey(entry.userName) === leaderboardKey(userName);
+              return (
+                <div className={clsx("leaderboard-row", isYou && "you")} key={`${entry.rank}-${entry.userName}`}>
+                  <div className="rank-badge">{entry.rank}</div>
+                  <div>
+                    <strong>{entry.userName}</strong>
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      {entry.checkInStreak} day streak · {relativeTime(entry.updatedAt)}
+                    </div>
+                  </div>
+                  <strong className="gold">{fmt(entry.netWorth)}</strong>
+                  <div className="leaderboard-mini">
+                    <span>{entry.holdingsCount} holdings</span>
+                    <span>{entry.completedMissions} missions</span>
+                    <span>{entry.quizCorrect} quiz correct</span>
+                  </div>
+                </div>
+              );
+            })}
+            {!leaderboardRows.length ? (
+              <div className="leaderboard-empty">
+                <Trophy size={20} />
+                <span>Finish onboarding with a username to appear here.</span>
+              </div>
+            ) : null}
+          </div>
+        </section>
+
+        <section>
+          <SectionHeader title="Billion Dollar Ladder" subtitle="Wealth milestones unlock new styles, tools, and harder questions." />
+          {MILESTONES.map((milestone, index) => {
+            const reached = netWorth >= milestone.amount;
+            const current = index === milestoneIndex;
+            return (
+              <div className="ladder-row" key={milestone.label}>
+                <div className={clsx("ladder-node", reached && "reached")}>{reached ? milestone.badge : <Lock size={18} />}</div>
+                <div className="card" style={{ borderColor: current ? "rgba(215,165,49,0.68)" : undefined }}>
+                  <div className="space-between">
+                    <div>
+                      <span className="display" style={{ color: reached ? "var(--gold-2)" : "var(--text)", fontSize: 30 }}>
+                        {milestone.label}
+                      </span>
+                      <span className="muted"> · {milestone.title}</span>
+                    </div>
+                    {current ? <span className="mode-pill">You are here</span> : reached ? <span className="green" style={{ fontWeight: 900 }}>Reached</span> : null}
+                  </div>
+                  {current ? (
+                    <div style={{ marginTop: 12 }}>
+                      <div className="space-between muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                        <span>{fmt(netWorth)}</span>
+                        <span>{nextMilestone ? `Next: ${nextMilestone.label}` : "Top rung"}</span>
+                      </div>
+                      <div className="progress-rail">
+                        <div className="progress-fill" style={{ width: `${milestoneProgress * 100}%` }} />
+                      </div>
+                    </div>
+                  ) : null}
+                  <p className="muted" style={{ margin: "10px 0 0", fontSize: 13 }}>
+                    Unlocks: {milestone.unlocks}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </section>
       </div>
     );
   }

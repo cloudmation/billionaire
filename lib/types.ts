@@ -117,3 +117,16 @@ export type GameProgressPayload = {
   trades: Trade[];
   quizHistory: QuizResult[];
 };
+
+export type LeaderboardEntry = {
+  rank: number;
+  userName: string;
+  netWorth: number;
+  cash: number;
+  stockValue: number;
+  holdingsCount: number;
+  completedMissions: number;
+  quizCorrect: number;
+  checkInStreak: number;
+  updatedAt: string;
+};

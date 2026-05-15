@@ -1,7 +1,8 @@
 import { neon } from "@neondatabase/serverless";
-import { mkdir, readFile, writeFile, appendFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile, appendFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
-import type { BillMessage, GameProgressPayload } from "./types";
+import { STOCKS } from "./game-data";
+import type { BillMessage, GameProgressPayload, LeaderboardEntry, Stock } from "./types";
 
 const dataDir = process.env.VERCEL ? path.join("/tmp", "billionaire-data") : path.join(process.cwd(), ".data");
 const billLogFile = path.join(dataDir, "bill-interactions.jsonl");
@@ -31,6 +32,38 @@ function progressFile(userName = "Investor") {
     .replace(/^-+|-+$/g, "")
     .slice(0, 60);
   return path.join(dataDir, `progress-${safeName || "investor"}.json`);
+}
+
+function portfolioValueFor(progress: GameProgressPayload) {
+  const stocks = new Map<string, Stock>();
+  STOCKS.forEach((stock) => stocks.set(stock.sym, stock));
+  (progress.customStocks ?? []).forEach((stock) => stocks.set(stock.sym, stock));
+  return (progress.holdings ?? []).reduce((sum, holding) => {
+    const stock = stocks.get(holding.sym);
+    return sum + (stock?.price ?? 0) * holding.shares;
+  }, 0);
+}
+
+function leaderboardEntry(progress: GameProgressPayload, updatedAt: string) {
+  const stockValue = portfolioValueFor(progress);
+  return {
+    rank: 0,
+    userName: progress.userName?.trim() || "Investor",
+    netWorth: (progress.cash ?? 0) + stockValue,
+    cash: progress.cash ?? 0,
+    stockValue,
+    holdingsCount: progress.holdings?.length ?? 0,
+    completedMissions: progress.completedMissions?.length ?? 0,
+    quizCorrect: (progress.quizHistory ?? []).reduce((sum, quiz) => sum + quiz.correct, 0),
+    checkInStreak: progress.checkInStreak ?? 0,
+    updatedAt
+  };
+}
+
+function rankLeaderboard(entries: Omit<LeaderboardEntry, "rank">[]) {
+  return entries
+    .sort((left, right) => right.netWorth - left.netWorth || left.userName.localeCompare(right.userName))
+    .map((entry, index) => ({ ...entry, rank: index + 1 }));
 }
 
 async function ensureDatabase() {
@@ -98,6 +131,45 @@ export async function writeProgress(progress: GameProgressPayload) {
 
   await ensureDataDir();
   await writeFile(progressFile(progress.userName), JSON.stringify(progress, null, 2), "utf8");
+}
+
+export async function readLeaderboard(limit = 25) {
+  if (await ensureDatabase()) {
+    const sql = getSql();
+    if (!sql) return [];
+    const rows = (await sql`
+      SELECT progress, updated_at
+      FROM player_progress
+      ORDER BY updated_at DESC
+      LIMIT 200
+    `) as Array<{ progress: GameProgressPayload; updated_at: string | Date }>;
+
+    return rankLeaderboard(
+      rows.map((row) =>
+        leaderboardEntry(
+          row.progress,
+          row.updated_at instanceof Date ? row.updated_at.toISOString() : new Date(row.updated_at).toISOString()
+        )
+      )
+    ).slice(0, limit);
+  }
+
+  try {
+    await ensureDataDir();
+    const files = await readdir(dataDir);
+    const entries = await Promise.all(
+      files
+        .filter((file) => file.startsWith("progress-") && file.endsWith(".json"))
+        .map(async (file) => {
+          const filePath = path.join(dataDir, file);
+          const [payload, fileStat] = await Promise.all([readFile(filePath, "utf8"), stat(filePath)]);
+          return leaderboardEntry(JSON.parse(payload) as GameProgressPayload, fileStat.mtime.toISOString());
+        })
+    );
+    return rankLeaderboard(entries).slice(0, limit);
+  } catch {
+    return [];
+  }
 }
 
 export async function logBillMessages(messages: BillMessage[], screen?: string) {
