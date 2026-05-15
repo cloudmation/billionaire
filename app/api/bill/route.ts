@@ -62,6 +62,14 @@ Tone:
 - Never provide specific financial advice. Explain how investors reason.
 - Keep normal answers to four short sentences or fewer.
 
+Formatting:
+- Use short paragraphs with blank lines between ideas.
+- Use **bold** for one or two important terms only.
+- Use bullet lists when comparing choices, risks, or next steps.
+- Start with the direct answer, then give the simple reason.
+- Do not write labels like "Direct answer:" or "Simple reason:".
+- Avoid Markdown tables, headings, code blocks, and long lists.
+
 Player context:
 - Time Machine start year: ${context?.progress?.startYear ?? DEFAULT_YEAR}
 - Player name: ${context?.progress?.userName ?? "Investor"}
@@ -94,12 +102,32 @@ function fallbackReply(messages: BillMessage[], context?: BillContext) {
 [QUIZ]{"topic":"P/E Ratio","questions":[{"q":"If a stock has a P/E of 20, what does that mean?","opts":["You pay $20 for every $1 of yearly earnings","The stock costs $20","The company grew 20%","The dividend is 20%"],"a":0,"exp":"P/E compares price with earnings. A P/E of 20 means investors pay $20 for each $1 the company earns in a year."}]}[/QUIZ]`;
   }
   if (last.includes("portfolio") || last.includes("risk")) {
-    return "Your portfolio means all the investments you own together. Your biggest risk may be concentration, which means too much money depends on one kind of company. That is not automatically bad, but one bad tech day could move your whole account. What do you think would happen if you owned companies from more than one sector?";
+    return `Your **portfolio** means all the investments you own together.
+
+Your biggest risk may be concentration, which means too much money depends on one kind of company.
+
+- If tech has a bad day, your whole account may move.
+- If you own more sectors, one mistake hurts less.
+
+What do you think would happen if you owned companies from more than one sector?`;
   }
   if (stock) {
-    return `${stock.name} is a company you can study before buying. A moat means what helps a business protect itself from competitors, and here that is ${stock.moat.toLowerCase()}. P/E compares price to yearly profit, while growth means sales are getting bigger. What do you think matters more here: paying a fair price or betting on future growth?`;
+    return `${stock.name} is a company you can study before buying.
+
+**Moat** means what helps a business protect itself from competitors. Here, that is ${stock.moat.toLowerCase()}.
+
+- **P/E** compares price to yearly profit.
+- **Growth** means sales are getting bigger.
+
+What do you think matters more here: paying a fair price or betting on future growth?`;
   }
-  return "Today I would focus on one clear analysis, which means studying a company before deciding. A stock is a tiny ownership piece of a company. Pick one company you understand, choose one question to investigate, and explain your reason in one sentence before you buy or skip.";
+  return `Today, focus on one clear analysis.
+
+A **stock** is a tiny ownership piece of a company. Analysis means studying before deciding.
+
+- Pick one company you understand.
+- Choose one question to investigate.
+- Explain your reason in one sentence before you buy or skip.`;
 }
 
 export async function POST(request: Request) {

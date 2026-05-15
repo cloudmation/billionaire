@@ -947,6 +947,36 @@ button:disabled {
   font-weight: 800;
 }
 
+.bill-answer {
+  display: grid;
+  gap: 8px;
+}
+
+.bill-answer-block {
+  display: grid;
+  gap: 8px;
+}
+
+.bill-answer p,
+.bill-answer ul {
+  margin: 0;
+}
+
+.bill-answer ul {
+  display: grid;
+  gap: 6px;
+  padding-left: 17px;
+}
+
+.bill-answer li {
+  padding-left: 1px;
+}
+
+.bill-answer strong {
+  color: var(--gold-2);
+  font-weight: 950;
+}
+
 .chat-form {
   display: grid;
   grid-template-columns: 1fr 40px;

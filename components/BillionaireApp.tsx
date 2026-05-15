@@ -112,17 +112,21 @@ function progressPayload(snapshot: () => GameProgressPayload) {
   return snapshot();
 }
 
+function cleanBillText(raw: string) {
+  return raw.replace(/\[\/?QUIZ\]/g, "").trim();
+}
+
 function extractQuiz(raw: string): { text: string; quiz: ActiveQuiz | null } {
   const match = raw.match(/\[QUIZ\]([\s\S]*?)\[\/QUIZ\]/);
-  if (!match) return { text: raw, quiz: null };
+  if (!match) return { text: cleanBillText(raw), quiz: null };
   try {
     const parsed = JSON.parse(match[1]) as Quiz;
     return {
-      text: raw.replace(/\[QUIZ\][\s\S]*?\[\/QUIZ\]/, "").trim(),
+      text: cleanBillText(raw.replace(/\[QUIZ\][\s\S]*?\[\/QUIZ\]/, "")),
       quiz: { ...parsed, current: 0, answers: [] }
     };
   } catch {
-    return { text: raw.replace(/\[QUIZ\][\s\S]*?\[\/QUIZ\]/, "").trim(), quiz: null };
+    return { text: cleanBillText(raw.replace(/\[QUIZ\][\s\S]*?\[\/QUIZ\]/, "")), quiz: null };
   }
 }
 
@@ -140,6 +144,56 @@ function relativeTime(iso: string) {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.round(hours / 24);
   return `${days}d ago`;
+}
+
+function formatInlineText(text: string) {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={`${part}-${index}`}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
+
+function BillMessageContent({ content }: { content: string }) {
+  const blocks = content
+    .split(/\n{2,}/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+
+  if (!blocks.length) return null;
+
+  return (
+    <div className="bill-answer">
+      {blocks.map((block, blockIndex) => {
+        const lines = block.split("\n").map((line) => line.trim()).filter(Boolean);
+        return (
+          <div className="bill-answer-block" key={`${block}-${blockIndex}`}>
+            {lines.map((line, lineIndex) => {
+              const isBullet = /^[-*]\s+/.test(line);
+              const previousIsBullet = lineIndex > 0 && /^[-*]\s+/.test(lines[lineIndex - 1]);
+              if (isBullet && previousIsBullet) return null;
+              if (isBullet) {
+                const listItems = [];
+                for (let itemIndex = lineIndex; itemIndex < lines.length; itemIndex += 1) {
+                  if (!/^[-*]\s+/.test(lines[itemIndex])) break;
+                  listItems.push(lines[itemIndex]);
+                }
+                return (
+                  <ul key={`${line}-${lineIndex}`}>
+                    {listItems.map((item, itemIndex) => (
+                      <li key={`${item}-${itemIndex}`}>{formatInlineText(item.replace(/^[-*]\s+/, ""))}</li>
+                    ))}
+                  </ul>
+                );
+              }
+              return <p key={`${line}-${lineIndex}`}>{formatInlineText(line)}</p>;
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function styleMetrics(stock: Stock, styleId: InvestmentStyleId) {
@@ -1141,7 +1195,9 @@ export function BillionaireApp() {
                   <Bot size={14} />
                 </div>
               ) : null}
-              <div className={clsx("message", message.role)}>{message.content}</div>
+              <div className={clsx("message", message.role)}>
+                {message.role === "assistant" ? <BillMessageContent content={message.content} /> : message.content}
+              </div>
             </div>
           ))}
           {billLoading ? (
