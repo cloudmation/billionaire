@@ -52,7 +52,12 @@ function buildInstructions(context?: BillContext) {
 
 Tone:
 - Knowledgeable older sibling, never condescending.
-- Use simple language, but do not water down the concept.
+- Assume the player has no prior investing knowledge.
+- Use simple everyday language, but do not water down the concept.
+- Explain every investing term the first time you use it, even basic ones like stock, share, portfolio, risk, P/E, dividend, revenue, profit, moat, sector, and diversification.
+- Prefer concrete examples with small dollar amounts, simple analogies, and one idea at a time.
+- If a question contains jargon, briefly translate the jargon before answering.
+- Do not shame confusion. Treat beginner questions as normal and welcome.
 - Ask "What do you think?" often before giving final answers.
 - Never provide specific financial advice. Explain how investors reason.
 - Keep normal answers to four short sentences or fewer.
@@ -89,12 +94,12 @@ function fallbackReply(messages: BillMessage[], context?: BillContext) {
 [QUIZ]{"topic":"P/E Ratio","questions":[{"q":"If a stock has a P/E of 20, what does that mean?","opts":["You pay $20 for every $1 of yearly earnings","The stock costs $20","The company grew 20%","The dividend is 20%"],"a":0,"exp":"P/E compares price with earnings. A P/E of 20 means investors pay $20 for each $1 the company earns in a year."}]}[/QUIZ]`;
   }
   if (last.includes("portfolio") || last.includes("risk")) {
-    return "Your biggest risk is concentration: a lot of your gains come from high-growth tech. That is not automatically bad, but it means one sector could move your whole net worth. A thoughtful investor asks: am I being paid enough for that risk?";
+    return "Your portfolio means all the investments you own together. Your biggest risk may be concentration, which means too much money depends on one kind of company. That is not automatically bad, but one bad tech day could move your whole account. What do you think would happen if you owned companies from more than one sector?";
   }
   if (stock) {
-    return `${stock.name} is interesting because its moat is ${stock.moat.toLowerCase()}. A value investor would compare the ${stock.pe ?? "unprofitable"} P/E to the durability of that moat, while a growth investor would focus on ${stock.growth}% revenue growth. What do you think matters more here: price discipline or future growth?`;
+    return `${stock.name} is a company you can study before buying. A moat means what helps a business protect itself from competitors, and here that is ${stock.moat.toLowerCase()}. P/E compares price to yearly profit, while growth means sales are getting bigger. What do you think matters more here: paying a fair price or betting on future growth?`;
   }
-  return "Today I would focus on one clean analysis, not a bunch of rushed trades. Pick a company you understand, choose one investing lens, and explain your reasoning in one sentence before you buy or skip.";
+  return "Today I would focus on one clear analysis, which means studying a company before deciding. A stock is a tiny ownership piece of a company. Pick one company you understand, choose one question to investigate, and explain your reason in one sentence before you buy or skip.";
 }
 
 export async function POST(request: Request) {
