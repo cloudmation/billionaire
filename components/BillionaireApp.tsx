@@ -13,6 +13,7 @@ import {
   Clock3,
   Home,
   LineChart,
+  LogOut,
   Lock,
   Minus,
   Plus,
@@ -614,6 +615,11 @@ export function BillionaireApp() {
   const [modePickerOpen, setModePickerOpen] = useState(false);
   const [billPanelOpen, setBillPanelOpen] = useState(false);
   const [addTickerOpen, setAddTickerOpen] = useState(false);
+  const [switchUserOpen, setSwitchUserOpen] = useState(false);
+  const [switchUserName, setSwitchUserName] = useState("");
+  const [switchUserEra, setSwitchUserEra] = useState<EraYear>(DEFAULT_YEAR);
+  const [switchUserError, setSwitchUserError] = useState("");
+  const [switchingUser, setSwitchingUser] = useState(false);
   const [addTickerError, setAddTickerError] = useState("");
   const [customTickerForm, setCustomTickerForm] = useState<CustomTickerForm>({
     sym: "",
@@ -733,7 +739,7 @@ export function BillionaireApp() {
   }, [hasOnboarded, hydrated, loadProgress, userName]);
 
   useEffect(() => {
-    if (!hydrated || !hasOnboarded) return;
+    if (!hydrated || !hasOnboarded || switchingUser) return;
     const timer = window.setTimeout(() => {
       fetch("/api/progress", {
         method: "POST",
@@ -755,6 +761,7 @@ export function BillionaireApp() {
     startYear,
     lastCheckInDate,
     checkInStreak,
+    switchingUser,
     hasOnboarded,
     hydrated,
     snapshot
@@ -816,6 +823,64 @@ export function BillionaireApp() {
       }
     ]);
     setTab("home");
+  }
+
+  function openSwitchUser() {
+    setSwitchUserName("");
+    setSwitchUserEra(DEFAULT_YEAR);
+    setSwitchUserError("");
+    setSwitchUserOpen(true);
+  }
+
+  async function switchUser() {
+    const nextName = switchUserName.trim();
+    if (!nextName) {
+      setSwitchUserError("Enter a username to switch.");
+      return;
+    }
+    if (nextName.toLowerCase() === (userName.trim() || "Investor").toLowerCase()) {
+      setSwitchUserError("You are already using that username.");
+      return;
+    }
+
+    setSwitchUserError("");
+    setSwitchingUser(true);
+    try {
+      await fetch("/api/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ progress: progressPayload(snapshot) })
+      }).catch(() => undefined);
+
+      const response = await fetch(`/api/progress?userName=${encodeURIComponent(nextName)}`);
+      const data = (await response.json()) as { progress?: GameProgressPayload | null };
+      loadedServer.current = nextName;
+      if (data.progress) {
+        loadProgress({ ...data.progress, hasOnboarded: true, userName: nextName });
+      } else {
+        startNewJourney({ userName: nextName, startYear: switchUserEra, playerAge: 12 });
+      }
+
+      setUserNameDraft(nextName);
+      setMessages([
+        {
+          role: "assistant",
+          content: data.progress
+            ? `Welcome back, ${nextName}. I loaded your saved investing journey.`
+            : `Welcome, ${nextName}. I started a fresh profile in ${switchUserEra} with $1,000.`
+        }
+      ]);
+      setBillQuiz(null);
+      setWizard(null);
+      setAddTickerOpen(false);
+      setModePickerOpen(false);
+      setTab("home");
+      setSwitchUserOpen(false);
+    } catch {
+      setSwitchUserError("I could not switch users. Try again.");
+    } finally {
+      setSwitchingUser(false);
+    }
   }
 
   function updateCustomTickerForm(field: keyof CustomTickerForm, value: string) {
@@ -1048,6 +1113,10 @@ export function BillionaireApp() {
             value={userNameDraft}
           />
         </label>
+        <button className="switch-user-button" onClick={openSwitchUser} type="button">
+          <LogOut size={14} />
+          Switch
+        </button>
         <div className="stat-stack">
           <div className="stat-label">Net worth</div>
           <div className="stat-value">{fmt(displayNetWorth || netWorth)}</div>
@@ -1152,6 +1221,7 @@ export function BillionaireApp() {
       {modePickerOpen ? renderModePicker() : null}
       {wizard ? renderWizard() : null}
       {addTickerOpen ? renderAddTickerModal() : null}
+      {switchUserOpen ? renderSwitchUserModal() : null}
     </div>
   );
 
@@ -1414,6 +1484,76 @@ export function BillionaireApp() {
               </button>
             </div>
           )}
+        </section>
+      </div>
+    );
+  }
+
+  function renderSwitchUserModal() {
+    const switchReady = switchUserName.trim().length > 0 && !switchingUser;
+    return (
+      <div className="modal-backdrop" role="dialog" aria-modal="true">
+        <section className="switch-dialog">
+          <div className="space-between" style={{ alignItems: "flex-start" }}>
+            <div>
+              <div className="section-kicker gold">Switch profile</div>
+              <h2 className="page-title" style={{ marginTop: 6 }}>
+                Log out and switch
+              </h2>
+              <p className="page-subtitle">
+                Your current progress saves first. Existing usernames load their saved game; new usernames start fresh.
+              </p>
+            </div>
+            <button aria-label="Close switch user" className="icon-button" onClick={() => setSwitchUserOpen(false)} type="button">
+              <X size={18} />
+            </button>
+          </div>
+
+          <form
+            className="switch-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              switchUser();
+            }}
+          >
+            <label className="form-label">
+              Username
+              <input
+                autoFocus
+                className="input"
+                onChange={(event) => {
+                  setSwitchUserError("");
+                  setSwitchUserName(event.target.value);
+                }}
+                placeholder="Ava"
+                value={switchUserName}
+              />
+            </label>
+            <label className="form-label">
+              Starting era for a new profile
+              <select
+                className="input"
+                onChange={(event) => setSwitchUserEra(Number(event.target.value) as EraYear)}
+                value={switchUserEra}
+              >
+                {ERAS.map((era) => (
+                  <option key={era.year} value={era.year}>
+                    {era.year} · {era.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {switchUserError ? <div className="form-error">{switchUserError}</div> : null}
+            <div className="switch-actions">
+              <button className="plain-button" onClick={() => setSwitchUserOpen(false)} type="button">
+                Cancel
+              </button>
+              <button className="primary-button" disabled={!switchReady} type="submit">
+                {switchingUser ? "Switching..." : "Switch user"}
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          </form>
         </section>
       </div>
     );
