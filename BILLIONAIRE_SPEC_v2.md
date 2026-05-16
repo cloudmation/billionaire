@@ -56,6 +56,7 @@ These rules supersede older language elsewhere in the spec if there is a conflic
 - The UI should show a countdown to the next Time Machine price update so players can tell the market is moving.
 - The UI should show the last price update time and refresh it immediately when the browser tab regains focus.
 - Portfolio value, trading prices, BILL context, leaderboard net worth, and stock cards must all use the same simulated market date.
+- Portfolio should show market date, next price update, last update time, current per-share price, and daily price move so holdings do not appear frozen.
 - The simulation caps at the latest available historical market date.
 
 ### Starting Eras
@@ -147,6 +148,7 @@ These rules supersede older language elsewhere in the spec if there is a conflic
 - There is a daily side quest limit.
 - Current daily side quest limit: 3 per user per local day.
 - Side quest completions are tracked separately from regular daily missions.
+- The sidebar should include a side quest shortcut with daily completion count.
 
 ### Leaderboard
 - The app includes a leaderboard.

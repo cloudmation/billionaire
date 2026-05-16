@@ -1225,6 +1225,13 @@ export function BillionaireApp() {
     setSector("All");
   }
 
+  function openSideQuestGuide() {
+    setTab("learn");
+    setLearnStyle(null);
+    setSideQuestOpen(true);
+    setSideQuestError("");
+  }
+
   function markConceptBatch(count: number, styleId?: InvestmentStyleId) {
     const learned = new Set(todaysStudiedConceptIds);
     const queue = [
@@ -1750,6 +1757,19 @@ export function BillionaireApp() {
                 </div>
               );
             })}
+          </div>
+
+          <div className="side-section side-quest-teaser">
+            <div className="space-between">
+              <div className="section-kicker" style={{ color: "var(--green)" }}>Side quest</div>
+              <span className="muted" style={{ fontSize: 11, fontWeight: 900 }}>
+                {todaysSideQuests.length}/{SIDE_QUEST_DAILY_LIMIT}
+              </span>
+            </div>
+            <button className="mission-link side-quest-link" disabled={sideQuestLimitReached} onClick={openSideQuestGuide} type="button">
+              <span>{activeSideQuest?.title ?? "Done today"}</span>
+              <small>{sideQuestLimitReached ? "Come back tomorrow" : "Answer quest"}</small>
+            </button>
           </div>
 
           <div className="side-section">
@@ -2817,6 +2837,18 @@ export function BillionaireApp() {
     return (
       <div className="fade-in stack">
         <SectionHeader title="Portfolio" subtitle="Your stocks, cash, gains, and risk in one clean view." />
+        <div className="filter-row" style={{ marginTop: -6 }}>
+          <span className="mode-pill">
+            {marketDateLabel}
+          </span>
+          <span className="mode-pill price-update-pill">
+            <Clock3 size={14} />
+            {priceUpdateLabel}
+          </span>
+          <span className="mode-pill last-update-pill">
+            {lastPriceUpdateLabel}
+          </span>
+        </div>
         <div className="grid-2">
           <section className="card">
             <div className="section-kicker">Portfolio value</div>
@@ -2851,6 +2883,7 @@ export function BillionaireApp() {
           <div className="table-row table-head">
             <div>Stock</div>
             <div>Shares</div>
+            <div>Price</div>
             <div>Cost basis</div>
             <div>Current value</div>
             <div>Gain / loss</div>
@@ -2875,6 +2908,12 @@ export function BillionaireApp() {
                   </div>
                 </div>
                 <strong>{holding.shares}</strong>
+                <div>
+                  <strong>{fmt(stock.price)}</strong>
+                  <div className={stock.change >= 0 ? "green" : "red"} style={{ fontSize: 12, fontWeight: 900 }}>
+                    {pct(stock.change)}
+                  </div>
+                </div>
                 <span>{fmt(cost)}</span>
                 <strong>{fmt(value)}</strong>
                 <span className={rowGain >= 0 ? "green" : "red"} style={{ fontWeight: 900 }}>

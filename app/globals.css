@@ -613,6 +613,24 @@ button:disabled {
   text-transform: uppercase;
 }
 
+.side-quest-teaser {
+  background: linear-gradient(135deg, rgba(39, 199, 123, 0.08), rgba(85, 199, 247, 0.05));
+}
+
+.side-quest-link {
+  margin-top: 9px;
+}
+
+.side-quest-link span {
+  color: var(--text);
+  font-weight: 900;
+}
+
+.side-quest-link:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .check-dot {
   display: grid;
   width: 18px;
@@ -1349,7 +1367,7 @@ button:disabled {
 
 .table-row {
   display: grid;
-  grid-template-columns: 1.8fr 0.8fr 1fr 1fr 1fr;
+  grid-template-columns: 1.8fr 0.7fr 0.9fr 1fr 1fr 1fr;
   gap: 10px;
   align-items: center;
   min-height: 56px;
@@ -2172,7 +2190,7 @@ select.input {
   }
 
   .table-row {
-    min-width: 760px;
+    min-width: 880px;
   }
 
   .leaderboard-card {
