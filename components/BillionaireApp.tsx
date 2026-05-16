@@ -198,6 +198,37 @@ function learningDayIndexFromJourney(journeyStartedAt: string | null, now: Date)
   return Math.max(0, Math.floor((nowUtc - startUtc) / 86_400_000));
 }
 
+function lessonStyleId(lesson: { mentor: string; title: string }): InvestmentStyleId {
+  if (lesson.mentor.includes("Peter")) return "growth";
+  if (lesson.mentor.includes("Paul")) return "technical";
+  if (lesson.mentor.includes("Rockefeller")) return "dividend";
+  if (lesson.mentor.includes("Richard")) return "momentum";
+  return "value";
+}
+
+function requestedConceptCount(content: string) {
+  const lower = content.toLowerCase();
+  if (!/(mark|count|record|log|did|done|finished|learned)/.test(lower) || !/concept|lesson/.test(lower)) {
+    return 0;
+  }
+  const digit = lower.match(/\b([1-9]|1\d|20)\b/);
+  if (digit) return Number(digit[1]);
+  const words: Record<string, number> = {
+    one: 1,
+    two: 2,
+    three: 3,
+    four: 4,
+    five: 5,
+    six: 6,
+    seven: 7,
+    eight: 8,
+    nine: 9,
+    ten: 10
+  };
+  const word = Object.entries(words).find(([key]) => lower.includes(key));
+  return word?.[1] ?? DAILY_CONCEPT_GOAL;
+}
+
 function cleanBillText(raw: string) {
   return raw.replace(/\[\/?QUIZ\]/g, "").trim();
 }
@@ -1097,8 +1128,8 @@ export function BillionaireApp() {
               }
             : mission.id === "concepts"
               ? {
-                  guide: "Open Learn, choose a path, read concept cards, then tap Mark learned on three cards.",
-                  action: "Open Learn",
+                  guide: "Open Learn to see concept cards with Mark learned buttons. You can also ask BILL: mark my concepts.",
+                  action: "Mark concepts",
                   progress: todaysConceptCount,
                   progressTotal: DAILY_CONCEPT_GOAL,
                   progressLabel: `${todaysConceptCount}/${DAILY_CONCEPT_GOAL} concepts today`
@@ -1158,12 +1189,37 @@ export function BillionaireApp() {
   function openMissionGuide(missionId: string) {
     if (missionId === "concepts") {
       setTab("learn");
-      setLearnStyle(null);
+      setLearnStyle("value");
       return;
     }
     setTab("market");
     setSearch("");
     setSector("All");
+  }
+
+  function markConceptBatch(count: number, styleId?: InvestmentStyleId) {
+    const learned = new Set(todaysStudiedConceptIds);
+    const queue = [
+      ...(styleId ? [] : [{ style: lessonStyleId(activeLesson), term: activeLesson.title }]),
+      ...STYLES.flatMap((style) =>
+        CONCEPTS[style.id].map((concept) => ({
+          style: style.id,
+          term: concept.term
+        }))
+      )
+    ].filter((concept) => (!styleId || concept.style === styleId) && !learned.has(`${concept.style}:${concept.term}`));
+    const selected = queue.slice(0, Math.max(0, count));
+    selected.forEach((concept) => markConceptStudied(concept.style, concept.term));
+    return selected.length;
+  }
+
+  function markActiveLessonConcept() {
+    return markConceptBatch(1);
+  }
+
+  function markStyleConcepts(styleId: InvestmentStyleId) {
+    const needed = Math.max(1, DAILY_CONCEPT_GOAL - todaysConceptCount);
+    return markConceptBatch(needed, styleId);
   }
 
   function finishOnboarding() {
@@ -1353,6 +1409,11 @@ export function BillionaireApp() {
   async function sendBill(quick?: string) {
     const content = (quick ?? billInput).trim();
     if (!content || billLoading) return;
+    const requestedMarks = requestedConceptCount(content);
+    const markedConcepts = requestedMarks ? markConceptBatch(requestedMarks, learnStyle ?? undefined) : 0;
+    const markedNotice = markedConcepts
+      ? `Marked ${markedConcepts} concept${markedConcepts === 1 ? "" : "s"} for today's mission.`
+      : "";
     setBillPanelOpen(true);
     setBillInput("");
     const outgoing = [...messages, { role: "user" as const, content }];
@@ -1379,7 +1440,7 @@ export function BillionaireApp() {
         ...outgoing,
         {
           role: "assistant",
-          content: parsed.text || `I made you a quick ${parsed.quiz?.topic ?? "investing"} quiz.`
+          content: [markedNotice, parsed.text || `I made you a quick ${parsed.quiz?.topic ?? "investing"} quiz.`].filter(Boolean).join("\n\n")
         }
       ]);
     } catch {
@@ -1387,8 +1448,12 @@ export function BillionaireApp() {
         ...outgoing,
         {
           role: "assistant",
-          content:
+          content: [
+            markedNotice,
             "I cannot reach the tutor service right now, but I can still help locally. Start with the company's moat, growth, and price."
+          ]
+            .filter(Boolean)
+            .join("\n\n")
         }
       ]);
     } finally {
@@ -2409,6 +2474,17 @@ export function BillionaireApp() {
               </div>
             </div>
           </section>
+          <section className="concept-mission-banner">
+            <div>
+              <div className="section-kicker">Daily concept mission</div>
+              <strong>{todaysConceptCount}/{DAILY_CONCEPT_GOAL} concepts today</strong>
+              <p>Tap Mark learned on cards you understand, or ask BILL to mark your concepts.</p>
+            </div>
+            <button className="plain-button" onClick={() => markStyleConcepts(style.id)} type="button">
+              <Check size={15} />
+              Mark this path
+            </button>
+          </section>
           <div className="grid-2">
             {concepts.map((concept) => {
               const learnedToday = todaysStudiedConceptIds.has(`${style.id}:${concept.term}`);
@@ -2456,7 +2532,15 @@ export function BillionaireApp() {
               Try it in the Market
               <ArrowRight size={17} />
             </button>
-            <button className="plain-button" onClick={() => sendBill(`Quiz me on ${style.label} Investing concepts`)} style={{ minHeight: 50 }} type="button">
+            <button
+              className="plain-button"
+              onClick={() => {
+                markStyleConcepts(style.id);
+                sendBill(`Quiz me on ${style.label} Investing concepts`);
+              }}
+              style={{ minHeight: 50 }}
+              type="button"
+            >
               <Bot size={17} />
               Quiz me on this
             </button>
@@ -2501,23 +2585,35 @@ export function BillionaireApp() {
           <div className="row apprenticeship-actions">
             <button
               className="primary-button"
-              onClick={() =>
+              onClick={() => {
+                markActiveLessonConcept();
                 sendBill(
                   `Teach me Day ${activeLesson.day} of the 30-day investor apprenticeship: ${activeLesson.title}. Explain it for a 12-year-old, go one level deeper than the app card, then give me one small action to do in the app.`
-                )
-              }
+                );
+              }}
               type="button"
             >
               <Bot size={17} />
               Start lesson with BILL
             </button>
-            <button className="plain-button" onClick={() => sendBill(`Quiz me on Day ${activeLesson.day}: ${activeLesson.title}. Do not repeat questions I already answered.`)} type="button">
+            <button
+              className="plain-button"
+              onClick={() => {
+                markActiveLessonConcept();
+                sendBill(`Quiz me on Day ${activeLesson.day}: ${activeLesson.title}. Do not repeat questions I already answered.`);
+              }}
+              type="button"
+            >
               <BookOpen size={17} />
               Quiz this lesson
             </button>
             <button className="plain-button" onClick={() => setTab("market")} type="button">
               <ArrowRight size={17} />
               Practice in Market
+            </button>
+            <button className="plain-button" onClick={markActiveLessonConcept} type="button">
+              <Check size={17} />
+              Mark lesson learned
             </button>
           </div>
         </section>
