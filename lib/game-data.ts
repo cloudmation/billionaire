@@ -1,5 +1,6 @@
 import type {
   Concept,
+  GameProgressPayload,
   Holding,
   InvestmentStyle,
   InvestmentStyleId,
@@ -60,14 +61,14 @@ export const STOCKS: Stock[] = [
     name: "Apple",
     mascot: "A",
     sector: "Tech",
-    price: 131.46,
-    change: 2.14,
+    price: 300.23,
+    change: 2.36,
     pe: 28,
     growth: 8,
     yield: 0.6,
     moat: "Brand and ecosystem",
     desc: "Consumer electronics, software, and services.",
-    since2010: 1563,
+    since2010: 4584,
     beta: 1.2,
     rsi: 58,
     volumeScore: 72,
@@ -78,14 +79,14 @@ export const STOCKS: Stock[] = [
     name: "Amazon",
     mascot: "AM",
     sector: "Commerce",
-    price: 103.29,
-    change: 0.87,
+    price: 264.14,
+    change: -3.13,
     pe: 58,
     growth: 22,
     yield: 0,
     moat: "Scale and Prime",
     desc: "E-commerce, cloud computing, advertising, and logistics.",
-    since2010: 1413,
+    since2010: 3843,
     beta: 1.4,
     rsi: 61,
     volumeScore: 76,
@@ -96,14 +97,14 @@ export const STOCKS: Stock[] = [
     name: "Netflix",
     mascot: "N",
     sector: "Streaming",
-    price: 448.32,
-    change: -1.23,
+    price: 87.02,
+    change: -0.54,
     pe: 41,
     growth: 15,
     yield: 0,
     moat: "Content library",
     desc: "Streaming entertainment with a global subscriber base.",
-    since2010: 3830,
+    since2010: 11350,
     beta: 1.5,
     rsi: 47,
     volumeScore: 62,
@@ -114,14 +115,14 @@ export const STOCKS: Stock[] = [
     name: "Tesla",
     mascot: "T",
     sector: "EV",
-    price: 174.83,
-    change: 3.45,
+    price: 422.24,
+    change: -1.43,
     pe: 52,
     growth: 19,
     yield: 0,
     moat: "Brand and software",
     desc: "Electric vehicles, energy storage, and autonomous driving.",
-    since2010: 5890,
+    since2010: 26454,
     beta: 2.1,
     rsi: 67,
     volumeScore: 88,
@@ -132,14 +133,14 @@ export const STOCKS: Stock[] = [
     name: "Google",
     mascot: "G",
     sector: "Tech",
-    price: 140.53,
-    change: 1.02,
+    price: 396.78,
+    change: -1,
     pe: 24,
     growth: 12,
     yield: 0,
     moat: "Search advantage",
     desc: "Search, YouTube, cloud infrastructure, ads, and AI.",
-    since2010: 621,
+    since2010: 2450,
     beta: 1.1,
     rsi: 53,
     volumeScore: 70,
@@ -150,14 +151,14 @@ export const STOCKS: Stock[] = [
     name: "Nvidia",
     mascot: "NV",
     sector: "Chips",
-    price: 875.39,
-    change: 5.67,
+    price: 225.32,
+    change: 4.7,
     pe: 71,
     growth: 122,
     yield: 0.03,
     moat: "CUDA ecosystem",
     desc: "AI chips, data center GPUs, gaming, and accelerated computing.",
-    since2010: 168000,
+    since2010: 53552,
     beta: 1.8,
     rsi: 73,
     volumeScore: 96,
@@ -169,13 +170,13 @@ export const STOCKS: Stock[] = [
     mascot: "CS",
     sector: "Networking",
     price: 118.21,
-    change: 2.7,
+    change: 22.41,
     pe: 43,
     growth: 6,
     yield: 1.3,
     moat: "Enterprise network installed base",
     desc: "Networking hardware, cybersecurity, collaboration tools, and cloud infrastructure.",
-    since2010: 420,
+    since2010: 644,
     beta: 0.9,
     rsi: 63,
     volumeScore: 74,
@@ -186,14 +187,14 @@ export const STOCKS: Stock[] = [
     name: "Nike",
     mascot: "NK",
     sector: "Fashion",
-    price: 94.12,
-    change: -0.54,
+    price: 41.88,
+    change: -5.12,
     pe: 27,
     growth: 5,
     yield: 1.7,
     moat: "Brand power",
     desc: "Athletic footwear, apparel, and sports equipment.",
-    since2010: 431,
+    since2010: 218,
     beta: 0.9,
     rsi: 42,
     volumeScore: 45,
@@ -204,14 +205,14 @@ export const STOCKS: Stock[] = [
     name: "Disney",
     mascot: "D",
     sector: "Media",
-    price: 88.43,
-    change: -0.23,
+    price: 102.72,
+    change: -4.91,
     pe: 71,
     growth: 4,
     yield: 0,
     moat: "IP library",
     desc: "Theme parks, streaming, movies, TV, and consumer products.",
-    since2010: 263,
+    since2010: 276,
     beta: 1.0,
     rsi: 39,
     volumeScore: 58,
@@ -222,14 +223,14 @@ export const STOCKS: Stock[] = [
     name: "Starbucks",
     mascot: "SB",
     sector: "Food",
-    price: 76.24,
-    change: -0.67,
+    price: 106.82,
+    change: 1.8,
     pe: 22,
     growth: 7,
     yield: 2.8,
     moat: "Loyalty program",
     desc: "Coffee shops, drive-throughs, grocery products, and rewards.",
-    since2010: 812,
+    since2010: 1150,
     beta: 0.8,
     rsi: 44,
     volumeScore: 52,
@@ -240,8 +241,8 @@ export const STOCKS: Stock[] = [
     name: "Roblox",
     mascot: "R",
     sector: "Gaming",
-    price: 45.87,
-    change: 1.89,
+    price: 42.85,
+    change: 2.24,
     pe: null,
     growth: 31,
     yield: 0,
@@ -258,8 +259,8 @@ export const STOCKS: Stock[] = [
     name: "Spotify",
     mascot: "SP",
     sector: "Streaming",
-    price: 272.14,
-    change: 0.44,
+    price: 436.94,
+    change: 4.57,
     pe: null,
     growth: 14,
     yield: 0,
@@ -276,8 +277,8 @@ export const STOCKS: Stock[] = [
     name: "Duolingo",
     mascot: "DU",
     sector: "EdTech",
-    price: 244.56,
-    change: 2.11,
+    price: 112.06,
+    change: 3.77,
     pe: null,
     growth: 43,
     yield: 0,
@@ -290,6 +291,312 @@ export const STOCKS: Stock[] = [
     fiftyTwoWeek: 87
   }
 ];
+
+export const MAX_MARKET_YEAR = 2026;
+
+export const HISTORICAL_PRICES: Record<string, Partial<Record<number, number>>> = {
+  AAPL: {
+    2000: 0.84,
+    2001: 0.22,
+    2002: 0.35,
+    2003: 0.22,
+    2004: 0.32,
+    2005: 0.95,
+    2006: 2.24,
+    2007: 2.51,
+    2008: 5.83,
+    2009: 2.72,
+    2010: 6.41,
+    2011: 9.87,
+    2012: 12.31,
+    2013: 16.58,
+    2014: 17.12,
+    2015: 24.19,
+    2016: 23.71,
+    2017: 26.72,
+    2018: 40.27,
+    2019: 37.47,
+    2020: 72.33,
+    2021: 125.74,
+    2022: 177.94,
+    2023: 122.98,
+    2024: 183.56,
+    2025: 242.3,
+    2026: 270.51
+  },
+  AMZN: {
+    2000: 4.47,
+    2001: 0.69,
+    2002: 0.55,
+    2003: 0.98,
+    2004: 2.6,
+    2005: 2.23,
+    2006: 2.38,
+    2007: 1.93,
+    2008: 4.81,
+    2009: 2.72,
+    2010: 6.7,
+    2011: 9.21,
+    2012: 8.95,
+    2013: 12.87,
+    2014: 19.9,
+    2015: 15.43,
+    2016: 31.85,
+    2017: 37.68,
+    2018: 59.45,
+    2019: 76.96,
+    2020: 94.9,
+    2021: 159.33,
+    2022: 170.4,
+    2023: 85.82,
+    2024: 149.93,
+    2025: 220.22,
+    2026: 226.5
+  },
+  NFLX: {
+    2002: 0.12,
+    2003: 0.08,
+    2004: 0.39,
+    2005: 0.17,
+    2006: 0.37,
+    2007: 0.38,
+    2008: 0.38,
+    2009: 0.43,
+    2010: 0.76,
+    2011: 2.55,
+    2012: 1.03,
+    2013: 1.31,
+    2014: 5.18,
+    2015: 4.98,
+    2016: 11,
+    2017: 12.75,
+    2018: 20.11,
+    2019: 26.77,
+    2020: 32.98,
+    2021: 52.29,
+    2022: 59.74,
+    2023: 29.5,
+    2024: 46.85,
+    2025: 88.67,
+    2026: 90.99
+  },
+  TSLA: {
+    2010: 1.59,
+    2011: 1.77,
+    2012: 1.87,
+    2013: 2.36,
+    2014: 10.01,
+    2015: 14.62,
+    2016: 14.89,
+    2017: 14.47,
+    2018: 21.37,
+    2019: 20.67,
+    2020: 28.68,
+    2021: 243.26,
+    2022: 399.93,
+    2023: 108.1,
+    2024: 248.42,
+    2025: 379.28,
+    2026: 438.07
+  },
+  GOOGL: {
+    2004: 2.49,
+    2005: 5.03,
+    2006: 10.8,
+    2007: 11.61,
+    2008: 17.01,
+    2009: 7.98,
+    2010: 15.56,
+    2011: 15,
+    2012: 16.52,
+    2013: 17.95,
+    2014: 27.63,
+    2015: 26.26,
+    2016: 37.66,
+    2017: 40.07,
+    2018: 53.22,
+    2019: 52.3,
+    2020: 67.87,
+    2021: 85.6,
+    2022: 143.8,
+    2023: 88.39,
+    2024: 137.04,
+    2025: 188.56,
+    2026: 314.93
+  },
+  NVDA: {
+    2000: 0.09,
+    2001: 0.11,
+    2002: 0.51,
+    2003: 0.09,
+    2004: 0.18,
+    2005: 0.18,
+    2006: 0.29,
+    2007: 0.55,
+    2008: 0.76,
+    2009: 0.2,
+    2010: 0.42,
+    2011: 0.36,
+    2012: 0.32,
+    2013: 0.29,
+    2014: 0.37,
+    2015: 0.48,
+    2016: 0.79,
+    2017: 2.51,
+    2018: 4.93,
+    2019: 3.38,
+    2020: 5.97,
+    2021: 13.08,
+    2022: 30.06,
+    2023: 14.3,
+    2024: 48.14,
+    2025: 138.26,
+    2026: 188.84
+  },
+  CSCO: {
+    2000: 34.77,
+    2001: 21.44,
+    2002: 12.38,
+    2003: 8.78,
+    2004: 15.61,
+    2005: 12.43,
+    2006: 11.23,
+    2007: 17.85,
+    2008: 17.08,
+    2009: 10.91,
+    2010: 15.89,
+    2011: 13.19,
+    2012: 12.17,
+    2013: 13.59,
+    2014: 15.15,
+    2015: 19.6,
+    2016: 19.34,
+    2017: 22.97,
+    2018: 30.27,
+    2019: 34.47,
+    2020: 40.25,
+    2021: 37.83,
+    2022: 55.5,
+    2023: 43.45,
+    2024: 47.18,
+    2025: 57,
+    2026: 75.63
+  },
+  NKE: {
+    2000: 4.44,
+    2001: 5.03,
+    2002: 5.32,
+    2003: 4.33,
+    2004: 6.38,
+    2005: 8.61,
+    2006: 8.21,
+    2007: 9.4,
+    2008: 12.33,
+    2009: 10.5,
+    2010: 13.18,
+    2011: 17.62,
+    2012: 20.11,
+    2013: 21.85,
+    2014: 33.44,
+    2015: 41.11,
+    2016: 53.79,
+    2017: 45.99,
+    2018: 56.93,
+    2019: 67.15,
+    2020: 93.65,
+    2021: 129.61,
+    2022: 153.48,
+    2023: 111.87,
+    2024: 101.67,
+    2025: 71.5,
+    2026: 62.86
+  },
+  DIS: {
+    2000: 22.58,
+    2001: 21.26,
+    2002: 16.5,
+    2003: 13.44,
+    2004: 18.61,
+    2005: 22.09,
+    2006: 19.56,
+    2007: 27.67,
+    2008: 26.39,
+    2009: 20.12,
+    2010: 27.29,
+    2011: 32.54,
+    2012: 33.51,
+    2013: 45.39,
+    2014: 68.58,
+    2015: 85.37,
+    2016: 94.92,
+    2017: 99.25,
+    2018: 106.22,
+    2019: 105.18,
+    2020: 144.79,
+    2021: 173.59,
+    2022: 153.15,
+    2023: 86.92,
+    2024: 88.91,
+    2025: 109.61,
+    2026: 111.85
+  },
+  SBUX: {
+    2000: 2.29,
+    2001: 3.9,
+    2002: 3.62,
+    2003: 3.93,
+    2004: 6.11,
+    2005: 11.34,
+    2006: 11.45,
+    2007: 13.08,
+    2008: 7.16,
+    2009: 3.65,
+    2010: 8.55,
+    2011: 12.51,
+    2012: 17.29,
+    2013: 21.31,
+    2014: 30.29,
+    2015: 32.45,
+    2016: 47.03,
+    2017: 45.35,
+    2018: 48.09,
+    2019: 54.92,
+    2020: 77.72,
+    2021: 91.53,
+    2022: 105.3,
+    2023: 93.16,
+    2024: 88.36,
+    2025: 89.21,
+    2026: 83.43
+  },
+  RBLX: {
+    2021: 69.5,
+    2022: 98.81,
+    2023: 27.85,
+    2024: 42.99,
+    2025: 58.84,
+    2026: 80.95
+  },
+  SPOT: {
+    2018: 149.01,
+    2019: 113.74,
+    2020: 151.62,
+    2021: 311,
+    2022: 244.16,
+    2023: 81.9,
+    2024: 188.8,
+    2025: 457.79,
+    2026: 575
+  },
+  DUOL: {
+    2021: 134.26,
+    2022: 105.07,
+    2023: 70.93,
+    2024: 214.35,
+    2025: 325.88,
+    2026: 176.48
+  }
+};
 
 export const MILESTONES: Milestone[] = [
   { amount: 1000, label: "$1K", title: "Saver", badge: "01", unlocks: "US stocks" },
@@ -710,6 +1017,93 @@ export function fmtCompact(n: number) {
 
 export function pct(n: number) {
   return `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
+}
+
+function localMidnight(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+function roundMoney(n: number) {
+  return Math.round(n * 100) / 100;
+}
+
+function yearPrice(sym: string, year: number) {
+  return HISTORICAL_PRICES[sym]?.[year];
+}
+
+function firstHistoryYear(sym: string) {
+  const years = Object.keys(HISTORICAL_PRICES[sym] ?? {})
+    .map(Number)
+    .sort((a, b) => a - b);
+  return years[0] ?? MAX_MARKET_YEAR;
+}
+
+function previousHistoryPrice(sym: string, year: number) {
+  const years = Object.keys(HISTORICAL_PRICES[sym] ?? {})
+    .map(Number)
+    .filter((candidate) => candidate < year)
+    .sort((a, b) => b - a);
+  const previousYear = years[0];
+  return previousYear ? yearPrice(sym, previousYear) : undefined;
+}
+
+export function getSimulatedYear(startYear: number, journeyStartedAt?: string | null, now = new Date()) {
+  if (!journeyStartedAt) return Math.min(MAX_MARKET_YEAR, startYear);
+  const started = new Date(journeyStartedAt);
+  if (Number.isNaN(started.getTime())) return Math.min(MAX_MARKET_YEAR, startYear);
+  const elapsedDays = Math.max(0, Math.floor((localMidnight(now) - localMidnight(started)) / 86_400_000));
+  return Math.min(MAX_MARKET_YEAR, Math.max(startYear, startYear + elapsedDays));
+}
+
+export function getMarketYear(progress: Pick<GameProgressPayload, "gameMode" | "startYear" | "journeyStartedAt">, now = new Date()) {
+  return progress.gameMode === "live" ? MAX_MARKET_YEAR : getSimulatedYear(progress.startYear, progress.journeyStartedAt, now);
+}
+
+export function getMarketStocks(
+  progress: Pick<GameProgressPayload, "gameMode" | "startYear" | "journeyStartedAt" | "customStocks">,
+  now = new Date()
+) {
+  const marketYear = getMarketYear(progress, now);
+  const stocks = new Map<string, Stock>();
+
+  STOCKS.forEach((stock) => {
+    if (progress.gameMode === "live") {
+      stocks.set(stock.sym, stock);
+      return;
+    }
+
+    const price = yearPrice(stock.sym, marketYear);
+    if (price == null) return;
+
+    const previous = previousHistoryPrice(stock.sym, marketYear);
+    const firstYear = firstHistoryYear(stock.sym);
+    const baseYear = Math.max(progress.startYear, firstYear);
+    const basePrice = yearPrice(stock.sym, baseYear) ?? price;
+    const change = previous != null ? ((price - previous) / previous) * 100 : 0;
+    const sinceStart = basePrice ? ((price - basePrice) / basePrice) * 100 : 0;
+
+    stocks.set(stock.sym, {
+      ...stock,
+      price: roundMoney(price),
+      change: Math.round(change * 100) / 100,
+      since2010: Math.round(sinceStart)
+    });
+  });
+
+  (progress.customStocks ?? []).forEach((stock) => {
+    stocks.set(stock.sym, stock);
+  });
+
+  return Array.from(stocks.values());
+}
+
+export function portfolioValueAtMarket(progress: Pick<GameProgressPayload, "gameMode" | "startYear" | "journeyStartedAt" | "customStocks" | "holdings">) {
+  const stocks = new Map<string, Stock>();
+  getMarketStocks(progress).forEach((stock) => stocks.set(stock.sym, stock));
+  return (progress.holdings ?? []).reduce((sum, holding) => {
+    const stock = stocks.get(holding.sym);
+    return sum + (stock?.price ?? 0) * holding.shares;
+  }, 0);
 }
 
 export function getStock(sym: string) {

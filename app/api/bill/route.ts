@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
-import { DEFAULT_YEAR, fmt, STOCKS } from "@/lib/game-data";
+import { DEFAULT_YEAR, fmt, getMarketStocks, getMarketYear } from "@/lib/game-data";
 import { logBillMessages } from "@/lib/db";
 import type { BillMessage, GameProgressPayload, Stock, TabId } from "@/lib/types";
 
@@ -23,7 +23,7 @@ const client = apiKey ? new OpenAI({ apiKey }) : null;
 
 function holdingsLine(progress?: GameProgressPayload) {
   if (!progress?.holdings?.length) return "No current holdings.";
-  const stocks = [...STOCKS, ...(progress.customStocks ?? [])];
+  const stocks = getMarketStocks(progress);
   return progress.holdings
     .map((holding) => {
       const stock = stocks.find((candidate) => candidate.sym === holding.sym);
@@ -33,7 +33,8 @@ function holdingsLine(progress?: GameProgressPayload) {
 }
 
 function portfolioValueFor(progress?: GameProgressPayload) {
-  const stocks = [...STOCKS, ...(progress?.customStocks ?? [])];
+  if (!progress) return 0;
+  const stocks = getMarketStocks(progress);
   return (progress?.holdings ?? []).reduce((sum, holding) => {
     const stock = stocks.find((candidate) => candidate.sym === holding.sym);
     return sum + (stock?.price ?? 0) * holding.shares;
@@ -42,6 +43,7 @@ function portfolioValueFor(progress?: GameProgressPayload) {
 
 function buildInstructions(context?: BillContext) {
   const netWorth = (context?.progress?.cash ?? 0) + portfolioValueFor(context?.progress);
+  const marketYear = context?.progress ? getMarketYear(context.progress) : DEFAULT_YEAR;
   const selected = context?.selectedStock
     ? `${context.selectedStock.sym} (${context.selectedStock.name}), price ${fmt(context.selectedStock.price)}, P/E ${
         context.selectedStock.pe ?? "not profitable"
@@ -72,9 +74,11 @@ Formatting:
 
 Player context:
 - Time Machine start year: ${context?.progress?.startYear ?? DEFAULT_YEAR}
+- Current market year shown to player: ${marketYear}
 - Player name: ${context?.progress?.userName ?? "Investor"}
 - Player age: ${context?.progress?.playerAge ?? 12}
 - Game mode: ${context?.progress?.gameMode === "live" ? "Live Market" : "Time Machine"}
+- Time Machine pricing: one real day equals one simulated year, using split-adjusted historical stock prices for the shown year.
 - Current screen: ${context?.screen ?? "home"}
 - Net worth: ${fmt(netWorth)}
 - Cash: ${fmt(context?.progress?.cash ?? 0)}

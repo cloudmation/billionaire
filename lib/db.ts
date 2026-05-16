@@ -1,8 +1,8 @@
 import { neon } from "@neondatabase/serverless";
 import { mkdir, readFile, writeFile, appendFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
-import { STOCKS } from "./game-data";
-import type { BillMessage, GameProgressPayload, LeaderboardEntry, Stock } from "./types";
+import { portfolioValueAtMarket } from "./game-data";
+import type { BillMessage, GameProgressPayload, LeaderboardEntry } from "./types";
 
 const dataDir = process.env.VERCEL ? path.join("/tmp", "billionaire-data") : path.join(process.cwd(), ".data");
 const billLogFile = path.join(dataDir, "bill-interactions.jsonl");
@@ -35,13 +35,7 @@ function progressFile(userName = "Investor") {
 }
 
 function portfolioValueFor(progress: GameProgressPayload) {
-  const stocks = new Map<string, Stock>();
-  STOCKS.forEach((stock) => stocks.set(stock.sym, stock));
-  (progress.customStocks ?? []).forEach((stock) => stocks.set(stock.sym, stock));
-  return (progress.holdings ?? []).reduce((sum, holding) => {
-    const stock = stocks.get(holding.sym);
-    return sum + (stock?.price ?? 0) * holding.shares;
-  }, 0);
+  return portfolioValueAtMarket(progress);
 }
 
 function leaderboardEntry(progress: GameProgressPayload, updatedAt: string) {

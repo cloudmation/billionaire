@@ -37,6 +37,8 @@ import {
   ERAS,
   fmt,
   fmtCompact,
+  getMarketStocks,
+  getMarketYear,
   getMilestoneIndex,
   getMilestoneProgress,
   MILESTONES,
@@ -46,7 +48,6 @@ import {
   portfolioCost,
   QUIZ_POOL,
   QUIZ_CORRECT_REWARD,
-  STOCKS,
   STYLES
 } from "@/lib/game-data";
 import { getActiveCheckInStreak, getDailyCheckInReward, getLocalDateKey, getNextCheckInStreak, useGameStore } from "@/lib/store";
@@ -584,6 +585,7 @@ export function BillionaireApp() {
   const playerAge = useGameStore((state) => state.playerAge);
   const gameMode = useGameStore((state) => state.gameMode);
   const startYear = useGameStore((state) => state.startYear);
+  const journeyStartedAt = useGameStore((state) => state.journeyStartedAt);
   const cash = useGameStore((state) => state.cash);
   const lastCheckInDate = useGameStore((state) => state.lastCheckInDate);
   const checkInStreak = useGameStore((state) => state.checkInStreak);
@@ -647,11 +649,8 @@ export function BillionaireApp() {
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
 
   const allStocks = useMemo(() => {
-    const bySymbol = new Map<string, Stock>();
-    STOCKS.forEach((stock) => bySymbol.set(stock.sym, stock));
-    customStocks.forEach((stock) => bySymbol.set(stock.sym, stock));
-    return Array.from(bySymbol.values());
-  }, [customStocks]);
+    return getMarketStocks({ gameMode, startYear, journeyStartedAt, customStocks });
+  }, [customStocks, gameMode, journeyStartedAt, startYear]);
   const findStock = (sym: string) => allStocks.find((stock) => stock.sym === sym);
   const stockValue = useMemo(
     () =>
@@ -670,9 +669,10 @@ export function BillionaireApp() {
   const nextMilestone = MILESTONES[milestoneIndex + 1];
   const selectedWizardStyle = wizard?.style ? STYLES.find((style) => style.id === wizard.style) ?? null : null;
   const isLiveMode = gameMode === "live";
+  const marketYear = getMarketYear({ gameMode, startYear, journeyStartedAt });
   const currentEra = ERAS.find((era) => era.year === startYear) ?? ERAS.find((era) => era.year === DEFAULT_YEAR)!;
-  const modeLabel = isLiveMode ? "Live Market" : `Time Machine · ${startYear}`;
-  const marketDateLabel = isLiveMode ? "Today" : `${startYear}`;
+  const modeLabel = isLiveMode ? "Live Market" : `Time Machine · ${marketYear}`;
+  const marketDateLabel = isLiveMode ? "Today" : `${marketYear}`;
   const checkedInToday = lastCheckInDate === getLocalDateKey();
   const activeCheckInStreak = getActiveCheckInStreak(lastCheckInDate, checkInStreak);
   const nextCheckInStreak = getNextCheckInStreak(lastCheckInDate, checkInStreak);
@@ -758,6 +758,7 @@ export function BillionaireApp() {
     userName,
     gameMode,
     startYear,
+    journeyStartedAt,
     lastCheckInDate,
     checkInStreak,
     switchingUser,
@@ -780,7 +781,7 @@ export function BillionaireApp() {
     return () => {
       active = false;
     };
-  }, [hasOnboarded, hydrated, tab, cash, holdings, completedMissions, quizHistory, checkInStreak, customStocks]);
+  }, [hasOnboarded, hydrated, tab, cash, holdings, completedMissions, quizHistory, checkInStreak, customStocks, gameMode, journeyStartedAt, startYear]);
 
   const sectors = useMemo(() => ["All", ...Array.from(new Set(allStocks.map((stock) => stock.sector)))], [allStocks]);
   const filteredStocks = useMemo(
@@ -1561,10 +1562,10 @@ export function BillionaireApp() {
         id: "time-machine" as const,
         icon: Clock3,
         title: "Time Machine",
-        subtitle: "Start in 2010 with real market history",
+        subtitle: `Start in ${startYear} with real market history`,
         bullets: [
           "1 day = 1 year of historical market data",
-          "Discover what $1K in Apple 2010 becomes",
+          `Discover what $1K in Apple ${startYear} becomes`,
           "Feel every crash and every comeback"
         ]
       },
@@ -1655,7 +1656,7 @@ export function BillionaireApp() {
         <div className="hero-grid">
           <section className="hero-card">
             <div>
-              <div className="section-kicker gold">Your net worth · {isLiveMode ? "Live Market" : startYear}</div>
+              <div className="section-kicker gold">Your net worth · {isLiveMode ? "Live Market" : marketYear}</div>
               <div className="hero-number">{fmt(displayNetWorth || netWorth)}</div>
               <div className="row" style={{ marginTop: 8, flexWrap: "wrap" }}>
                 <span className="green" style={{ fontWeight: 900 }}>
@@ -1670,9 +1671,9 @@ export function BillionaireApp() {
           </section>
 
           <section className="card">
-            <div className="section-kicker gold">{isLiveMode ? "Market mode" : `Starting era · ${startYear}`}</div>
+            <div className="section-kicker gold">{isLiveMode ? "Market mode" : `Time Machine year · ${marketYear}`}</div>
             <h2 className="display" style={{ fontSize: 44, margin: "8px 0 4px", color: "rgba(240,199,109,0.9)" }}>
-              {isLiveMode ? "LIVE" : startYear}
+              {isLiveMode ? "LIVE" : marketYear}
             </h2>
             <p style={{ margin: 0, lineHeight: 1.65 }}>
               {isLiveMode
@@ -1684,7 +1685,7 @@ export function BillionaireApp() {
               <p className="muted" style={{ margin: "7px 0 0", lineHeight: 1.55, fontSize: 13 }}>
                 {isLiveMode
                   ? "Use the same discipline as Time Machine: pick one lens, name the risk, then decide whether the trade deserves capital."
-                  : `${currentEra.title} is your first investing backdrop. Start slowly: learn one concept, analyze one stock, then decide.`}
+                  : `${currentEra.title} began in ${startYear}. One real day moves the market forward one year.`}
               </p>
             </div>
           </section>
@@ -1833,9 +1834,10 @@ export function BillionaireApp() {
                 <p className="muted" style={{ margin: "8px 0 0", fontSize: 12, lineHeight: 1.45 }}>
                   {stock.desc}
                 </p>
-                {stock.since2010 ? (
+                {stock.since2010 !== 0 ? (
                   <div className="gold" style={{ marginTop: 10, fontSize: 12, fontWeight: 900 }}>
-                    Since 2010: +{stock.since2010.toLocaleString()}%
+                    Run so far: {stock.since2010 >= 0 ? "+" : ""}
+                    {stock.since2010.toLocaleString()}%
                   </div>
                 ) : null}
               </button>

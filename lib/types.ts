@@ -107,6 +107,7 @@ export type GameProgressPayload = {
   playerAge: number;
   gameMode: GameMode;
   startYear: EraYear;
+  journeyStartedAt: string | null;
   cash: number;
   lastCheckInDate: string | null;
   checkInStreak: number;
