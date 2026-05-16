@@ -2176,19 +2176,127 @@ select.input {
   }
 
   .topbar {
-    position: relative;
-    grid-template-columns: 1fr;
-    gap: 10px;
-    padding: 14px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 10px;
+    min-height: 0;
+    padding: 10px 12px;
+  }
+
+  .brand {
+    min-width: 0;
+  }
+
+  .brand-mark {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    font-size: 18px;
+  }
+
+  .brand-name {
+    overflow: hidden;
+    font-size: 19px;
+    line-height: 1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .brand-sub {
+    display: none;
+  }
+
+  .stat-stack {
+    justify-self: end;
+  }
+
+  .stat-value {
+    font-size: 22px;
+  }
+
+  .milestone-strip {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .milestone-strip .mode-pill {
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .progress-rail {
+    height: 4px;
   }
 
   .user-chip {
-    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr);
+    min-height: 34px;
+    width: 100%;
+  }
+
+  .user-chip svg,
+  .switch-user-button svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .user-chip input {
+    font-size: 12px;
+  }
+
+  .topbar > .user-chip {
+    grid-column: 1 / 2;
+  }
+
+  .topbar > .switch-user-button {
+    grid-column: 2 / 3;
+    justify-self: end;
+  }
+
+  .topbar > .tiny-pill {
+    display: none;
+  }
+
+  .topbar .stat-label {
+    font-size: 9px;
+  }
+
+  .topbar .mode-pill {
+    font-size: 11px;
+    white-space: normal;
+  }
+
+  .topbar .progress-rail,
+  .topbar .milestone-strip > .tiny-pill {
+    display: none;
+  }
+
+  .topbar .user-chip span {
+    display: none;
+  }
+
+  .topbar .stat-stack {
+    grid-column: 2 / 3;
+    grid-row: 1;
+  }
+
+  .topbar .milestone-strip {
+    grid-row: 2;
+  }
+
+  .topbar .user-chip,
+  .topbar .switch-user-button {
+    grid-row: 3;
+  }
+
+  .topbar .switch-user-button {
     width: 100%;
   }
 
   .switch-user-button {
-    width: 100%;
+    min-height: 34px;
+    padding: 0 12px;
   }
 
   .mode-dialog {
@@ -2231,28 +2339,44 @@ select.input {
   }
 
   .sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 35;
     border-right: 0;
     border-bottom: 1px solid var(--line);
+    background: rgba(8, 11, 20, 0.97);
+    backdrop-filter: blur(16px);
   }
 
   .nav {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(5, minmax(58px, 1fr));
     padding: 8px;
   }
 
   .nav-button {
+    flex-direction: column;
     justify-content: center;
+    gap: 4px;
     min-height: 46px;
     padding: 0;
     border-left: 0;
     border-bottom: 2px solid transparent;
-    font-size: 0;
+    border-radius: 10px;
+    font-size: 10px;
+    line-height: 1;
+    text-align: center;
   }
 
   .nav-button.active {
     border-left-color: transparent;
     border-bottom-color: var(--gold);
+    background: rgba(215, 165, 49, 0.08);
+  }
+
+  .nav-button svg {
+    width: 16px;
+    height: 16px;
   }
 
   .side-section {
@@ -2260,20 +2384,22 @@ select.input {
   }
 
   .main {
-    padding: 16px;
+    padding: 14px 12px calc(88px + env(safe-area-inset-bottom));
   }
 
   .bill-panel {
-    top: 10px;
-    right: 10px;
-    bottom: 10px;
-    width: calc(100vw - 20px);
-    border-radius: 14px;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    border-radius: 0;
   }
 
   .bill-fab {
-    right: 14px;
-    bottom: 14px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    min-height: 44px;
+    padding: 0 13px;
   }
 
   .hero-grid,
@@ -2287,6 +2413,79 @@ select.input {
 
   .checkin-actions {
     justify-content: flex-start;
+  }
+
+  .hero-card,
+  .card,
+  .stock-card,
+  .style-card {
+    border-radius: 14px;
+  }
+
+  .hero-card {
+    gap: 14px;
+    padding: 18px;
+  }
+
+  .hero-number {
+    font-size: 56px;
+  }
+
+  .page-title {
+    font-size: 30px;
+  }
+
+  .display {
+    line-height: 0.98;
+  }
+
+  .stock-card,
+  .style-card {
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .stock-card-summary {
+    padding: 8px;
+  }
+
+  .stock-card-summary p {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .filter-row {
+    flex-wrap: nowrap;
+    margin: 14px -12px;
+    overflow-x: auto;
+    padding: 0 12px 4px;
+    scrollbar-width: none;
+  }
+
+  .filter-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-chip {
+    flex: 0 0 auto;
+  }
+
+  .chart-frame {
+    height: 210px;
+  }
+
+  .stock-detail-chart {
+    padding: 12px;
+  }
+
+  .stock-chart {
+    min-height: 220px;
+  }
+
+  .stock-chart .svg-chart {
+    height: 170px;
   }
 
   .apprenticeship-head {
@@ -2313,11 +2512,77 @@ select.input {
   }
 
   .table {
-    overflow-x: auto;
+    display: grid;
+    gap: 12px;
+    overflow: visible;
+    border: 0;
+    background: transparent;
   }
 
   .table-row {
-    min-width: 980px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 11px;
+    min-height: 0;
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid rgba(85, 199, 247, 0.16);
+    border-radius: 14px;
+    background: rgba(11, 15, 26, 0.94);
+  }
+
+  .table-head {
+    display: none;
+  }
+
+  .table-row > :first-child,
+  .portfolio-trade-actions {
+    grid-column: 1 / -1;
+  }
+
+  .table-row > :not(:first-child):not(.portfolio-trade-actions) {
+    display: grid;
+    gap: 3px;
+    align-content: start;
+    min-width: 0;
+    color: var(--text);
+    font-size: 14px;
+  }
+
+  .table-row > :not(:first-child):not(.portfolio-trade-actions)::before {
+    color: var(--muted-2);
+    font-size: 10px;
+    font-weight: 950;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .table-row > :nth-child(2)::before {
+    content: "Shares";
+  }
+
+  .table-row > :nth-child(3)::before {
+    content: "Price";
+  }
+
+  .table-row > :nth-child(4)::before {
+    content: "Cost basis";
+  }
+
+  .table-row > :nth-child(5)::before {
+    content: "Current value";
+  }
+
+  .table-row > :nth-child(6)::before {
+    content: "Gain / loss";
+  }
+
+  .portfolio-trade-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .trade-mini-button {
+    width: 100%;
   }
 
   .leaderboard-card {
@@ -2330,6 +2595,14 @@ select.input {
 
   .company-snapshot-grid {
     grid-template-columns: 1fr;
+  }
+
+  .company-snapshot-block {
+    min-height: 0;
+  }
+
+  .company-snapshot-head h2 {
+    font-size: 23px;
   }
 
   .company-snapshot-footer {
@@ -2352,5 +2625,96 @@ select.input {
 
   .leaderboard-row {
     min-width: 760px;
+  }
+
+  .wizard {
+    width: 100%;
+    max-height: none;
+    border-radius: 0;
+  }
+
+  .modal-backdrop {
+    align-items: stretch;
+    padding: 0;
+  }
+
+  .wizard-inner {
+    padding: 14px;
+  }
+
+  .wizard-sticky-head {
+    top: -14px;
+    margin: -14px -14px 14px;
+    padding: 14px;
+  }
+
+  .wizard-stock-title {
+    font-size: 26px;
+  }
+
+  .step-strip {
+    grid-template-columns: repeat(5, minmax(74px, 1fr));
+    overflow-x: auto;
+    padding-bottom: 3px;
+  }
+}
+
+@media (max-width: 560px) {
+  .topbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .brand-name {
+    max-width: 145px;
+  }
+
+  .mode-pill,
+  .tiny-pill {
+    min-height: 28px;
+    padding: 0 10px;
+  }
+
+  .user-chip {
+    min-width: 0;
+  }
+
+  .switch-user-button {
+    width: auto;
+    min-width: 0;
+    padding: 0 10px;
+  }
+
+  .switch-user-button span {
+    display: none;
+  }
+
+  .nav {
+    grid-template-columns: repeat(5, minmax(56px, 1fr));
+    gap: 2px;
+    overflow-x: auto;
+  }
+
+  .nav-button {
+    font-size: 9px;
+  }
+
+  .hero-number {
+    font-size: 48px;
+  }
+
+  .page-title {
+    font-size: 28px;
+  }
+
+  .curriculum-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .table-row {
+    grid-template-columns: 1fr;
+  }
+
+  .portfolio-trade-actions {
+    grid-template-columns: 1fr;
   }
 }
