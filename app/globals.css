@@ -269,7 +269,7 @@ button:disabled {
   top: 0;
   z-index: 40;
   display: grid;
-  grid-template-columns: 220px minmax(260px, 1fr) auto auto auto auto;
+  grid-template-columns: 220px minmax(260px, 1fr) auto auto auto;
   gap: 14px;
   align-items: center;
   min-height: 64px;
@@ -366,7 +366,7 @@ button:disabled {
 
 .user-chip {
   display: grid;
-  grid-template-columns: auto auto minmax(92px, 130px);
+  grid-template-columns: auto auto minmax(112px, 150px);
   align-items: center;
   gap: 7px;
   min-height: 34px;
@@ -381,7 +381,8 @@ button:disabled {
   text-transform: uppercase;
 }
 
-.user-chip input {
+.user-chip input,
+.user-chip select {
   min-width: 0;
   width: 100%;
   border: 0;
@@ -392,6 +393,16 @@ button:disabled {
   letter-spacing: 0;
   outline: none;
   text-transform: none;
+}
+
+.user-chip select {
+  appearance: auto;
+  cursor: pointer;
+}
+
+.user-chip select:disabled {
+  cursor: wait;
+  opacity: 0.68;
 }
 
 .switch-user-button {
@@ -2241,17 +2252,13 @@ select.input {
     height: 14px;
   }
 
-  .user-chip input {
+  .user-chip input,
+  .user-chip select {
     font-size: 12px;
   }
 
   .topbar > .user-chip {
-    grid-column: 1 / 2;
-  }
-
-  .topbar > .switch-user-button {
-    grid-column: 2 / 3;
-    justify-self: end;
+    grid-column: 1 / -1;
   }
 
   .topbar > .tiny-pill {
@@ -2285,13 +2292,8 @@ select.input {
     grid-row: 2;
   }
 
-  .topbar .user-chip,
-  .topbar .switch-user-button {
+  .topbar .user-chip {
     grid-row: 3;
-  }
-
-  .topbar .switch-user-button {
-    width: 100%;
   }
 
   .switch-user-button {

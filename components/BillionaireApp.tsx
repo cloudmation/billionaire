@@ -14,7 +14,6 @@ import {
   Clock3,
   Home,
   LineChart,
-  LogOut,
   Lock,
   Minus,
   Plus,
@@ -912,7 +911,6 @@ export function BillionaireApp() {
   const loadProgress = useGameStore((state) => state.loadProgress);
   const buyStock = useGameStore((state) => state.buyStock);
   const sellStock = useGameStore((state) => state.sellStock);
-  const setUserName = useGameStore((state) => state.setUserName);
   const setGameMode = useGameStore((state) => state.setGameMode);
   const startNewJourney = useGameStore((state) => state.startNewJourney);
   const addCustomStock = useGameStore((state) => state.addCustomStock);
@@ -1090,6 +1088,16 @@ export function BillionaireApp() {
       .slice(0, 25)
       .map((entry, index) => ({ ...entry, rank: index + 1 }));
   }, [cash, checkInStreak, completedMissions.length, holdings.length, leaderboard, netWorth, quizHistory, stockValue, userName]);
+  const playerOptions = useMemo(() => {
+    const byUser = new Map<string, string>();
+    leaderboard.forEach((entry) => {
+      const name = entry.userName.trim();
+      if (name) byUser.set(leaderboardKey(name), name);
+    });
+    const currentName = userName.trim() || "Investor";
+    byUser.set(leaderboardKey(currentName), currentName);
+    return Array.from(byUser.values()).sort((left, right) => left.localeCompare(right));
+  }, [leaderboard, userName]);
   const answeredQuestionTexts = useMemo(
     () => new Set(quizHistory.flatMap((quiz) => quiz.questions ?? [])),
     [quizHistory]
@@ -1187,9 +1195,9 @@ export function BillionaireApp() {
   ]);
 
   useEffect(() => {
-    if (!hydrated || !hasOnboarded || tab !== "ladder") return;
+    if (!hydrated || !hasOnboarded) return;
     let active = true;
-    fetch("/api/leaderboard?limit=25")
+    fetch("/api/leaderboard?limit=50")
       .then((response) => response.json())
       .then((data: { leaders?: LeaderboardEntry[] }) => {
         if (active) setLeaderboard(data.leaders ?? []);
@@ -1200,7 +1208,7 @@ export function BillionaireApp() {
     return () => {
       active = false;
     };
-  }, [hasOnboarded, hydrated, tab, cash, holdings, completedMissions, quizHistory, sideQuestHistory, checkInStreak, customStocks, gameMode, journeyStartedAt, marketDate, startYear]);
+  }, [hasOnboarded, hydrated, cash, holdings, completedMissions, quizHistory, sideQuestHistory, checkInStreak, customStocks, gameMode, journeyStartedAt, marketDate, startYear]);
 
   const sectors = useMemo(() => ["All", ...Array.from(new Set(allStocks.map((stock) => stock.sector)))], [allStocks]);
   const filteredStocks = useMemo(
@@ -1300,11 +1308,6 @@ export function BillionaireApp() {
     window.addEventListener("pointercancel", stop);
   }
 
-  function commitUserName(nextUserName: string) {
-    const nextName = nextUserName.trim() || userName || "Investor";
-    setUserName(nextName);
-  }
-
   function openMissionGuide(missionId: string) {
     if (missionId === "concepts") {
       setTab("learn");
@@ -1360,21 +1363,21 @@ export function BillionaireApp() {
     setTab("home");
   }
 
-  function openSwitchUser() {
-    setSwitchUserName("");
+  function openSwitchUser(defaultName = "") {
+    setSwitchUserName(defaultName);
     setSwitchUserEra(DEFAULT_YEAR);
     setSwitchUserError("");
     setSwitchUserOpen(true);
   }
 
-  async function switchUser() {
-    const nextName = switchUserName.trim();
+  async function switchToPlayer(nextNameInput: string, startEra: EraYear = DEFAULT_YEAR) {
+    const nextName = nextNameInput.trim();
     if (!nextName) {
       setSwitchUserError("Enter a username to switch.");
       return;
     }
     if (nextName.toLowerCase() === (userName.trim() || "Investor").toLowerCase()) {
-      setSwitchUserError("You are already using that username.");
+      if (switchUserOpen) setSwitchUserError("You are already using that username.");
       return;
     }
 
@@ -1393,7 +1396,7 @@ export function BillionaireApp() {
       if (data.progress) {
         loadProgress({ ...data.progress, hasOnboarded: true, userName: nextName });
       } else {
-        startNewJourney({ userName: nextName, startYear: switchUserEra, playerAge: 12 });
+        startNewJourney({ userName: nextName, startYear: startEra, playerAge: 12 });
       }
 
       setMessages([
@@ -1401,7 +1404,7 @@ export function BillionaireApp() {
           role: "assistant",
           content: data.progress
             ? `Welcome back, ${nextName}. I loaded your saved investing journey.`
-            : `Welcome, ${nextName}. I started a fresh profile in ${switchUserEra} with $1,000.`
+            : `Welcome, ${nextName}. I started a fresh profile in ${startEra} with $1,000.`
         }
       ]);
       setBillQuiz(null);
@@ -1415,6 +1418,18 @@ export function BillionaireApp() {
     } finally {
       setSwitchingUser(false);
     }
+  }
+
+  async function switchUser() {
+    await switchToPlayer(switchUserName, switchUserEra);
+  }
+
+  function choosePlayer(value: string) {
+    if (value === "__new__") {
+      openSwitchUser();
+      return;
+    }
+    void switchToPlayer(value);
   }
 
   function updateCustomTickerForm(field: keyof CustomTickerForm, value: string) {
@@ -1793,25 +1808,23 @@ export function BillionaireApp() {
           </div>
           <div className="tiny-pill">{nextMilestone ? nextMilestone.label : "Top"}</div>
         </div>
-        <label className="user-chip">
+        <label className="user-chip player-select-chip">
           <User size={14} />
           <span>Player</span>
-          <input
-            aria-label="Player name"
-            defaultValue={userName}
-            key={userName}
-            onBlur={(event) => commitUserName(event.currentTarget.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.currentTarget.blur();
-              }
-            }}
-          />
+          <select
+            aria-label="Switch player"
+            disabled={switchingUser}
+            onChange={(event) => choosePlayer(event.currentTarget.value)}
+            value={userName.trim() || "Investor"}
+          >
+            {playerOptions.map((name) => (
+              <option key={leaderboardKey(name)} value={name}>
+                {name}
+              </option>
+            ))}
+            <option value="__new__">New player...</option>
+          </select>
         </label>
-        <button className="switch-user-button" onClick={openSwitchUser} type="button">
-          <LogOut size={14} />
-          Switch
-        </button>
         <div className="stat-stack">
           <div className="stat-label">Net worth</div>
           <div className="stat-value">{fmt(displayNetWorth || netWorth)}</div>
