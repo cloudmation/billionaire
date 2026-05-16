@@ -74,6 +74,7 @@ import type {
 
 type WizardState = {
   stock: Stock;
+  origin: "market" | "portfolio";
   step: number;
   style: InvestmentStyleId | null;
   answer: number | null;
@@ -1408,11 +1409,27 @@ export function BillionaireApp() {
     setTab("market");
     setWizard({
       stock,
+      origin: "market",
       step: 0,
       style: null,
       answer: null,
       action: null,
       shares: 1,
+      confirmed: false,
+      quiz: null
+    });
+  }
+
+  function openPortfolioTrade(stock: Stock, action: "buy" | "sell", ownedShares = 0) {
+    setTab("portfolio");
+    setWizard({
+      stock,
+      origin: "portfolio",
+      step: 4,
+      style: null,
+      answer: null,
+      action,
+      shares: action === "sell" ? Math.max(1, Math.min(1, ownedShares)) : 1,
       confirmed: false,
       quiz: null
     });
@@ -1639,9 +1656,13 @@ export function BillionaireApp() {
     }
     const style = wizard.style ?? "quick";
     if (wizard.action === "buy") {
-      buyStock({ sym: stock.sym, shares: wizard.shares, price: stock.price, style });
+      const affordableShares = Math.floor(cash / Math.max(0.01, stock.price));
+      if (affordableShares < 1) return;
+      buyStock({ sym: stock.sym, shares: Math.min(wizard.shares, affordableShares), price: stock.price, style });
     } else {
-      sellStock({ sym: stock.sym, shares: wizard.shares, price: stock.price, style });
+      const ownedShares = holdings.find((holding) => holding.sym === stock.sym)?.shares ?? 0;
+      if (ownedShares < 1) return;
+      sellStock({ sym: stock.sym, shares: Math.min(wizard.shares, ownedShares), price: stock.price, style });
     }
     updateWizard({
       confirmed: true,
@@ -1814,7 +1835,7 @@ export function BillionaireApp() {
           {tab === "home" ? renderHome() : null}
           {tab === "market" ? (wizard ? renderWizard() : renderMarket()) : null}
           {tab === "learn" ? renderLearn() : null}
-          {tab === "portfolio" ? renderPortfolio() : null}
+          {tab === "portfolio" ? (wizard ? renderWizard() : renderPortfolio()) : null}
           {tab === "ladder" ? renderLadder() : null}
         </main>
 
@@ -2887,6 +2908,7 @@ export function BillionaireApp() {
             <div>Cost basis</div>
             <div>Current value</div>
             <div>Gain / loss</div>
+            <div>Trade</div>
           </div>
           {holdings.map((holding) => {
             const stock = findStock(holding.sym);
@@ -2920,6 +2942,14 @@ export function BillionaireApp() {
                   {rowGain >= 0 ? "+" : ""}
                   {fmt(rowGain)}
                 </span>
+                <div className="portfolio-trade-actions">
+                  <button className="success-button trade-mini-button" onClick={() => openPortfolioTrade(stock, "buy", holding.shares)} type="button">
+                    Buy
+                  </button>
+                  <button className="danger-button trade-mini-button" onClick={() => openPortfolioTrade(stock, "sell", holding.shares)} type="button">
+                    Sell
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -3034,11 +3064,20 @@ export function BillionaireApp() {
     const stock = currentWizardStock ?? wizard.stock;
     const style = selectedWizardStyle;
     const metrics = style ? styleMetrics(stock, style.id) : [];
+    const ownedShares = holdings.find((holding) => holding.sym === stock.sym)?.shares ?? 0;
+    const maxBuyShares = Math.max(1, Math.floor(cash / Math.max(0.01, stock.price)));
+    const shareLimit = wizard.action === "sell" ? Math.max(1, ownedShares) : maxBuyShares;
+    const sizedShares = Math.min(Math.max(1, wizard.shares), shareLimit);
+    const tradeDisabled =
+      !wizard.action ||
+      (wizard.action === "buy" && cash < stock.price) ||
+      (wizard.action === "sell" && ownedShares < 1);
+    const backLabel = wizard.origin === "portfolio" ? "Back to Portfolio" : "Back to Market";
     return (
       <div className="fade-in wizard-page">
         <button className="plain-button" onClick={() => setWizard(null)} type="button">
           <ChevronLeft size={16} />
-          Back to Market
+          {backLabel}
         </button>
         <section className="wizard workspace">
           <div className="wizard-inner">
@@ -3226,8 +3265,14 @@ export function BillionaireApp() {
                   {(["buy", "sell", "skip"] as const).map((action) => (
                     <button
                       className={clsx(action === "buy" ? "success-button" : action === "sell" ? "danger-button" : "plain-button")}
+                      disabled={action === "buy" ? cash < stock.price : action === "sell" ? ownedShares < 1 : false}
                       key={action}
-                      onClick={() => updateWizard({ action })}
+                      onClick={() =>
+                        updateWizard({
+                          action,
+                          shares: action === "sell" ? Math.min(sizedShares, Math.max(1, ownedShares)) : Math.min(sizedShares, maxBuyShares)
+                        })
+                      }
                       style={{
                         minHeight: 50,
                         outline: wizard.action === action ? "2px solid var(--gold)" : "none",
@@ -3243,32 +3288,36 @@ export function BillionaireApp() {
                   <section className="card">
                     <div className="section-kicker">Shares</div>
                     <div className="row" style={{ marginTop: 9 }}>
-                      <button className="icon-button" onClick={() => updateWizard({ shares: Math.max(1, wizard.shares - 1) })} type="button">
+                      <button className="icon-button" onClick={() => updateWizard({ shares: Math.max(1, sizedShares - 1) })} type="button">
                         <Minus size={16} />
                       </button>
                       <input
                         className="input"
+                        max={shareLimit}
                         min={1}
-                        onChange={(event) => updateWizard({ shares: Math.max(1, Number(event.target.value) || 1) })}
+                        onChange={(event) => updateWizard({ shares: Math.min(shareLimit, Math.max(1, Number(event.target.value) || 1)) })}
                         style={{ textAlign: "center" }}
                         type="number"
-                        value={wizard.shares}
+                        value={sizedShares}
                       />
-                      <button className="icon-button" onClick={() => updateWizard({ shares: wizard.shares + 1 })} type="button">
+                      <button className="icon-button" disabled={sizedShares >= shareLimit} onClick={() => updateWizard({ shares: Math.min(shareLimit, sizedShares + 1) })} type="button">
                         <Plus size={16} />
                       </button>
+                    </div>
+                    <div className="muted" style={{ fontSize: 12, fontWeight: 800, marginTop: 8 }}>
+                      {wizard.action === "sell" ? `${ownedShares} shares available to sell` : `${fmt(cash)} cash available`}
                     </div>
                     <div className="space-between" style={{ marginTop: 12 }}>
                       <span className="muted">Estimated total</span>
                       <strong className="display" style={{ color: "var(--gold-2)", fontSize: 28 }}>
-                        {fmt(wizard.shares * stock.price)}
+                        {fmt(sizedShares * stock.price)}
                       </strong>
                     </div>
                   </section>
                 ) : null}
                 {!wizard.confirmed ? (
-                  <button className="primary-button" disabled={!wizard.action} onClick={executeTrade} style={{ minHeight: 52 }} type="button">
-                    {wizard.action === "skip" ? "Back to market" : "Confirm and start micro-quiz"}
+                  <button className="primary-button" disabled={tradeDisabled} onClick={executeTrade} style={{ minHeight: 52 }} type="button">
+                    {wizard.action === "skip" ? backLabel : "Confirm and start micro-quiz"}
                     <ArrowRight size={16} />
                   </button>
                 ) : null}

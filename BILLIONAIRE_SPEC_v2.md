@@ -58,6 +58,8 @@ These rules supersede older language elsewhere in the spec if there is a conflic
 - Time-related UI must be concise: use one compact global market status for mode, simulated day/date, and next update; avoid repeating the same countdown or date chips in page action bars.
 - Portfolio value, trading prices, BILL context, leaderboard net worth, and stock cards must all use the same simulated market date.
 - Portfolio should show market date, last update time, current per-share price, and daily price move so holdings do not appear frozen without duplicating the global countdown.
+- Portfolio holdings should include clear Buy and Sell actions so players can adjust positions without returning to the Market list.
+- Portfolio trade actions should reuse the same trade workspace, enforce available cash/owned-share limits, and still create a learning moment after the decision.
 - The simulation caps at the latest available historical market date.
 - Stock analysis should use an inline Market workspace rather than a tall modal, with a sticky stock summary/progress header and a clear Back to Market action.
 
