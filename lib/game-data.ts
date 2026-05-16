@@ -1250,6 +1250,22 @@ function findFirstDateIndexOnOrAfter(date: string) {
   return answer;
 }
 
+function findMarketDateIndexOnOrBefore(date: string) {
+  let low = 0;
+  let high = MARKET_DATES.length - 1;
+  let answer = -1;
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    if (MARKET_DATES[mid] <= date) {
+      answer = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+  return answer;
+}
+
 function findRowIndexOnOrBefore(rows: DailyPriceRow[], date: string) {
   let low = 0;
   let high = rows.length - 1;
@@ -1355,6 +1371,46 @@ export function getStockChartData(
     date,
     value: roundMoney(value)
   }));
+}
+
+export function getPortfolioChartData(
+  progress: Pick<GameProgressPayload, "gameMode" | "startYear" | "journeyStartedAt" | "customStocks" | "holdings">,
+  now = new Date(),
+  maxPoints = 80
+) {
+  const holdings = progress.holdings ?? [];
+  if (!holdings.length) return [];
+
+  const marketDate = getMarketDate(progress, now);
+  const currentIndex = findMarketDateIndexOnOrBefore(marketDate);
+  if (currentIndex < 0) return [];
+
+  if (progress.gameMode === "live") {
+    return [
+      {
+        year: marketDate,
+        value: roundMoney(portfolioValueAtMarket(progress))
+      }
+    ];
+  }
+
+  const firstIndex = Math.max(0, currentIndex - 79);
+  const chartRows: DailyPriceRow[] = MARKET_DATES.slice(firstIndex, currentIndex + 1).map((date) => [date, 0]);
+  const sampledDates = sampleRows(chartRows, maxPoints).map(([date]) => date);
+
+  return sampledDates.map((date) => {
+    const value = holdings.reduce((sum, holding) => {
+      const customStock = progress.customStocks?.find((stock) => stock.sym === holding.sym);
+      if (customStock) return sum + customStock.price * holding.shares;
+      const point = getDailyPricePoint(holding.sym, date);
+      return sum + (point?.price ?? 0) * holding.shares;
+    }, 0);
+
+    return {
+      year: date,
+      value: roundMoney(value)
+    };
+  });
 }
 
 export function getMarketStocks(

@@ -43,6 +43,7 @@ import {
   getMarketYear,
   getMilestoneIndex,
   getMilestoneProgress,
+  getPortfolioChartData,
   getSimulatedMarketDay,
   getStockChartData,
   MILESTONES,
@@ -928,6 +929,10 @@ export function BillionaireApp() {
       }, 0),
     [allStocks, holdings]
   );
+  const portfolioChartData = useMemo(
+    () => getPortfolioChartData({ gameMode, startYear, journeyStartedAt, customStocks, holdings }, marketNow),
+    [customStocks, gameMode, holdings, journeyStartedAt, marketNow, startYear]
+  );
   const costBasis = useMemo(() => portfolioCost(holdings), [holdings]);
   const netWorth = cash + stockValue;
   const gain = stockValue - costBasis;
@@ -1089,6 +1094,7 @@ export function BillionaireApp() {
     gameMode,
     startYear,
     journeyStartedAt,
+    marketDate,
     lastCheckInDate,
     checkInStreak,
     switchingUser,
@@ -1111,7 +1117,7 @@ export function BillionaireApp() {
     return () => {
       active = false;
     };
-  }, [hasOnboarded, hydrated, tab, cash, holdings, completedMissions, quizHistory, sideQuestHistory, checkInStreak, customStocks, gameMode, journeyStartedAt, startYear]);
+  }, [hasOnboarded, hydrated, tab, cash, holdings, completedMissions, quizHistory, sideQuestHistory, checkInStreak, customStocks, gameMode, journeyStartedAt, marketDate, startYear]);
 
   const sectors = useMemo(() => ["All", ...Array.from(new Set(allStocks.map((stock) => stock.sector)))], [allStocks]);
   const filteredStocks = useMemo(
@@ -2842,7 +2848,14 @@ export function BillionaireApp() {
               {fmt(gain)} score move
             </div>
             <div className="chart-frame">
-              <SparklineSvg data={PORTFOLIO_HISTORY} secondary />
+              {portfolioChartData.length ? (
+                <SparklineSvg data={portfolioChartData} secondary />
+              ) : (
+                <div className="empty-state">
+                  <strong>No portfolio chart yet</strong>
+                  <span>Your holdings history appears after your first trade.</span>
+                </div>
+              )}
             </div>
           </section>
           <section className="card">
