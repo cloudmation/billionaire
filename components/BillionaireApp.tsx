@@ -92,10 +92,10 @@ type CustomTickerForm = {
 
 const navItems: Array<{ id: TabId; label: string; icon: typeof Home }> = [
   { id: "home", label: "Home", icon: Home },
-  { id: "market", label: "Market", icon: BarChart3 },
-  { id: "learn", label: "Learn", icon: BookOpen },
-  { id: "portfolio", label: "Portfolio", icon: BriefcaseBusiness },
-  { id: "ladder", label: "Ladder", icon: Trophy }
+  { id: "market", label: "Stocks", icon: BarChart3 },
+  { id: "learn", label: "Skills", icon: BookOpen },
+  { id: "portfolio", label: "Lineup", icon: BriefcaseBusiness },
+  { id: "ladder", label: "Rank", icon: Trophy }
 ];
 
 const sectorColors = ["#d7a531", "#27c77b", "#55c7f7", "#a78bfa", "#fb8a3c", "#f05d5e"];
@@ -628,7 +628,6 @@ export function BillionaireApp() {
     price: "",
     change: ""
   });
-  const [userNameDraft, setUserNameDraft] = useState(userName);
   const [onboardingStep, setOnboardingStep] = useState<"name" | "era">("name");
   const [onboardingName, setOnboardingName] = useState("");
   const [selectedEra, setSelectedEra] = useState<EraYear>(DEFAULT_YEAR);
@@ -806,16 +805,14 @@ export function BillionaireApp() {
     return Array.from(bySector.entries()).map(([name, value]) => ({ name, value }));
   }, [allStocks, holdings]);
 
-  function commitUserName() {
-    const nextName = userNameDraft.trim() || userName || "Investor";
-    setUserNameDraft(nextName);
+  function commitUserName(nextUserName: string) {
+    const nextName = nextUserName.trim() || userName || "Investor";
     setUserName(nextName);
   }
 
   function finishOnboarding() {
     const nextName = onboardingName.trim() || "Investor";
     startNewJourney({ userName: nextName, startYear: selectedEra, playerAge: 12 });
-    setUserNameDraft(nextName);
     setMessages([
       {
         role: "assistant",
@@ -861,7 +858,6 @@ export function BillionaireApp() {
         startNewJourney({ userName: nextName, startYear: switchUserEra, playerAge: 12 });
       }
 
-      setUserNameDraft(nextName);
       setMessages([
         {
           role: "assistant",
@@ -1085,7 +1081,7 @@ export function BillionaireApp() {
           <div className="brand-mark">B</div>
           <div>
             <div className="brand-name">BILLIONAIRE</div>
-            <div className="brand-sub">Investing game</div>
+            <div className="brand-sub">Money strategy game</div>
           </div>
         </div>
         <div className="milestone-strip">
@@ -1103,14 +1099,14 @@ export function BillionaireApp() {
           <span>Player</span>
           <input
             aria-label="Player name"
-            onBlur={commitUserName}
-            onChange={(event) => setUserNameDraft(event.target.value)}
+            defaultValue={userName}
+            key={userName}
+            onBlur={(event) => commitUserName(event.currentTarget.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 event.currentTarget.blur();
               }
             }}
-            value={userNameDraft}
           />
         </label>
         <button className="switch-user-button" onClick={openSwitchUser} type="button">
@@ -1151,7 +1147,7 @@ export function BillionaireApp() {
 
           <div className="side-section">
             <div className="space-between">
-              <div className="section-kicker">Today's progress</div>
+              <div className="section-kicker">Daily quests</div>
               <button className="text-button" onClick={resetTodayProgress} type="button">
                 <RotateCcw size={12} />
                 Reset
@@ -1169,7 +1165,7 @@ export function BillionaireApp() {
           </div>
 
           <div className="side-section">
-            <div className="section-kicker">Learning path</div>
+            <div className="section-kicker">Skill tree</div>
             {STYLES.slice(0, 4).map((style) => {
               const progress =
                 style.id === "value" ? 68 : style.id === "growth" ? 32 : studiedStyles.includes(style.id) ? 20 : 0;
@@ -1194,7 +1190,7 @@ export function BillionaireApp() {
 
           <div style={{ flex: 1 }} />
           <div className="side-section">
-            <div className="section-kicker">Trades remaining</div>
+            <div className="section-kicker">Trades left</div>
             <div className="display" style={{ color: "var(--green)", fontSize: 30, marginTop: 4 }}>
               {Math.max(0, 3 - trades.filter((trade) => trade.createdAt.slice(0, 10) === new Date().toISOString().slice(0, 10)).length)} / 3
             </div>
@@ -1413,16 +1409,16 @@ export function BillionaireApp() {
             <div className="brand-mark">B</div>
             <div>
               <div className="brand-name">BILLIONAIRE</div>
-              <div className="brand-sub">New investor setup</div>
+              <div className="brand-sub">New player setup</div>
             </div>
           </div>
 
           {onboardingStep === "name" ? (
             <div className="onboarding-stage fade-in">
-              <div className="section-kicker gold">12-year-old investor profile</div>
-              <h1 className="onboarding-title">What's your name?</h1>
+              <div className="section-kicker gold">Player profile</div>
+              <h1 className="onboarding-title">Pick your investor name</h1>
               <p className="onboarding-copy">
-                BILL will use your name, remember your progress, and coach every trade like a mini lesson.
+                Build your money game from $1,000. BILL keeps it simple, tracks your progress, and coaches every move.
               </p>
               <label className="onboarding-label">
                 Player name
@@ -1438,9 +1434,9 @@ export function BillionaireApp() {
                 />
               </label>
               <div className="onboarding-facts">
-                <span>Age 12</span>
-                <span>$1,000 starting cash</span>
-                <span>BILL always on</span>
+                <span>Beginner friendly</span>
+                <span>$1,000 starter stack</span>
+                <span>AI coach unlocked</span>
               </div>
               <button className="primary-button onboarding-cta" disabled={!nameReady} onClick={() => setOnboardingStep("era")} type="button">
                 Choose era
@@ -1645,11 +1641,11 @@ export function BillionaireApp() {
 
   function renderHome() {
     const statCards = [
-      { label: "Cash available", value: fmt(cash), color: "var(--text)" },
-      { label: "In stocks", value: fmt(stockValue), color: "var(--cyan)" },
-      { label: "Total gain", value: `${gain >= 0 ? "+" : ""}${fmt(gain)}`, color: gain >= 0 ? "var(--green)" : "var(--red)" },
+      { label: "Cash stack", value: fmt(cash), color: "var(--text)" },
+      { label: "Stock power", value: fmt(stockValue), color: "var(--cyan)" },
+      { label: "Score move", value: `${gain >= 0 ? "+" : ""}${fmt(gain)}`, color: gain >= 0 ? "var(--green)" : "var(--red)" },
       {
-        label: "Next milestone",
+        label: "Next level",
         value: nextMilestone ? `${fmtCompact(nextMilestone.amount - netWorth)} away` : "Complete",
         color: "var(--gold-2)"
       }
@@ -1707,14 +1703,14 @@ export function BillionaireApp() {
 
         <section className="card checkin-card">
           <div>
-            <div className="section-kicker gold">Daily check-in</div>
+            <div className="section-kicker gold">Daily drop</div>
             <h2 className="display" style={{ color: checkedInToday ? "var(--green)" : "var(--gold-2)", fontSize: 36, margin: "8px 0 4px" }}>
               {checkedInToday ? "Checked in today" : `Claim ${fmt(availableCheckInReward)}`}
             </h2>
             <p className="muted" style={{ lineHeight: 1.55, margin: 0 }}>
               {checkedInToday
                 ? `Come back tomorrow for ${fmt(tomorrowCheckInReward)}.`
-                : `Keep showing up. Today becomes day ${nextCheckInStreak} of your check-in streak.`}
+                : `Keep showing up. Today becomes day ${nextCheckInStreak} of your streak.`}
             </p>
           </div>
           <div className="checkin-actions">
@@ -1732,7 +1728,7 @@ export function BillionaireApp() {
         <div className="grid-2">
           <section className="card">
             <div className="space-between">
-              <div className="section-kicker">Daily missions</div>
+              <div className="section-kicker">Daily quests</div>
               <button className="text-button" onClick={resetTodayProgress} type="button">
                 <RotateCcw size={12} />
                 Reset today
@@ -1762,7 +1758,7 @@ export function BillionaireApp() {
           </section>
 
           <section className="card">
-            <div className="section-kicker">Portfolio snapshot</div>
+            <div className="section-kicker">My lineup</div>
             <div className="chart-frame" style={{ height: 210 }}>
               <HoldingsBars holdings={holdings} stocks={allStocks} />
             </div>
@@ -1776,7 +1772,7 @@ export function BillionaireApp() {
     return (
       <div className="fade-in">
         <div className="space-between" style={{ alignItems: "flex-start", marginBottom: 4 }}>
-          <SectionHeader title={`Stock Market · ${marketDateLabel}`} subtitle="Click any company to run the Analysis Wizard before trading." />
+          <SectionHeader title={`Stock Arena · ${marketDateLabel}`} subtitle="Pick a company, run the wizard, then make the move." />
           <div className="row" style={{ justifyContent: "flex-end", flexWrap: "wrap" }}>
             <button className="plain-button" onClick={() => setAddTickerOpen(true)} type="button">
               <Plus size={16} />
@@ -1795,7 +1791,7 @@ export function BillionaireApp() {
             <input
               className="input"
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search stocks"
+              placeholder="Find a ticker"
               style={{ paddingLeft: 34 }}
               value={search}
             />
@@ -1864,13 +1860,13 @@ export function BillionaireApp() {
         <div className="fade-in stack">
           <button className="plain-button" onClick={() => setLearnStyle(null)} type="button">
             <ChevronLeft size={16} />
-            Academy
+            Skill tree
           </button>
           <section className="hero-card" style={{ borderColor: `${style.color}55`, background: `linear-gradient(135deg, ${style.tint}, rgba(16,18,22,0.96))` }}>
             <div className="space-between">
               <div>
                 <div className="section-kicker" style={{ color: style.color }}>
-                  Investing style
+                  Skill path
                 </div>
                 <div className="display" style={{ color: style.color, fontSize: 54 }}>
                   {style.label} Investing
@@ -1911,7 +1907,7 @@ export function BillionaireApp() {
               style={{ minHeight: 50 }}
               type="button"
             >
-              Practice with a real stock
+              Try it in the arena
               <ArrowRight size={17} />
             </button>
             <button className="plain-button" onClick={() => sendBill(`Quiz me on ${style.label} Investing concepts`)} style={{ minHeight: 50 }} type="button">
@@ -1925,7 +1921,7 @@ export function BillionaireApp() {
 
     return (
       <div className="fade-in stack">
-        <SectionHeader title="Investing Academy" subtitle="Master each style to unlock better questions and sharper analysis." />
+        <SectionHeader title="Skill Tree" subtitle="Level up your investing lenses, then use them in the stock arena." />
         <div className="grid-2">
           {STYLES.map((style) => {
             const unlocked = netWorth >= style.unlockedAt || style.id === "value" || style.id === "growth";
@@ -1979,13 +1975,13 @@ export function BillionaireApp() {
             </div>
             <div style={{ flex: 1 }}>
               <div className="section-kicker" style={{ color: "var(--green)" }}>
-                BILL's daily challenge
+                BILL's side quest
               </div>
               <p style={{ margin: "5px 0 0", fontWeight: 800 }}>
                 Find a value stock with a P/E under 25 and explain whether the moat is strong enough.
               </p>
               <p className="muted" style={{ margin: "4px 0 0", fontSize: 13 }}>
-                Reward: +$5,000 demo bonus and better value-analysis progress.
+                Reward: +$5,000 demo bonus and better value-analysis XP.
               </p>
             </div>
             <button className="success-button" onClick={() => setTab("market")} type="button">
@@ -2001,23 +1997,23 @@ export function BillionaireApp() {
   function renderPortfolio() {
     return (
       <div className="fade-in stack">
-        <SectionHeader title="Portfolio" subtitle="A clear look at your holdings, gains, and concentration risk." />
+        <SectionHeader title="My Lineup" subtitle="Your stocks, cash, gains, and risk in one clean view." />
         <div className="grid-2">
           <section className="card">
-            <div className="section-kicker">Portfolio value</div>
+            <div className="section-kicker">Lineup value</div>
             <div className="display" style={{ color: "var(--green)", fontSize: 44, marginTop: 6 }}>
               {fmt(stockValue)}
             </div>
             <div className={gain >= 0 ? "green" : "red"} style={{ fontWeight: 900 }}>
               {gain >= 0 ? "+" : ""}
-              {fmt(gain)} total gain
+              {fmt(gain)} score move
             </div>
             <div className="chart-frame">
               <SparklineSvg data={PORTFOLIO_HISTORY} secondary />
             </div>
           </section>
           <section className="card">
-            <div className="section-kicker">Sector allocation</div>
+            <div className="section-kicker">Sector mix</div>
             <div className="chart-frame">
               <AllocationBars allocation={allocation} />
             </div>
@@ -2083,7 +2079,7 @@ export function BillionaireApp() {
     const myRank = leaderboardRows.find((entry) => leaderboardKey(entry.userName) === leaderboardKey(userName))?.rank ?? 1;
     return (
       <div className="fade-in stack" style={{ maxWidth: 940 }}>
-        <SectionHeader title="Leaderboard" subtitle="See how every saved investor is climbing the game." />
+        <SectionHeader title="Leaderboard" subtitle="See who is climbing the money game." />
         <section className="card leaderboard-card">
           <div className="space-between leaderboard-summary">
             <div>
@@ -2093,7 +2089,7 @@ export function BillionaireApp() {
               </div>
             </div>
             <div className="leaderboard-score">
-              <span className="muted">Net worth</span>
+              <span className="muted">Current score</span>
               <strong>{fmt(netWorth)}</strong>
             </div>
           </div>
@@ -2135,7 +2131,7 @@ export function BillionaireApp() {
         </section>
 
         <section>
-          <SectionHeader title="Billion Dollar Ladder" subtitle="Wealth milestones unlock new styles, tools, and harder questions." />
+          <SectionHeader title="Billion Dollar Ladder" subtitle="Hit levels, unlock harder skills, and keep climbing." />
           {MILESTONES.map((milestone, index) => {
             const reached = netWorth >= milestone.amount;
             const current = index === milestoneIndex;

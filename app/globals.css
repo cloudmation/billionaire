@@ -1,21 +1,23 @@
 @import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap");
 
 :root {
-  --bg: #050506;
-  --panel: #0a0b0d;
-  --panel-2: #101216;
-  --panel-3: #151922;
-  --line: #22262f;
-  --line-soft: #171a21;
-  --text: #f4f1e8;
-  --muted: #8d95a3;
-  --muted-2: #626a78;
+  --bg: #05070d;
+  --panel: #0b0f1a;
+  --panel-2: #111827;
+  --panel-3: #172033;
+  --line: #273246;
+  --line-soft: #1b2434;
+  --text: #f7f3ea;
+  --muted: #9aa6ba;
+  --muted-2: #6f7b91;
   --gold: #d7a531;
   --gold-2: #f0c76d;
   --green: #27c77b;
   --red: #f05d5e;
   --cyan: #55c7f7;
   --violet: #a78bfa;
+  --pink: #ff5bd6;
+  --acid: #b7ff4a;
   --orange: #fb8a3c;
   --radius: 8px;
 }
@@ -69,6 +71,8 @@ button:disabled {
 .app {
   min-height: 100vh;
   background:
+    linear-gradient(135deg, rgba(255, 91, 214, 0.08), transparent 28%),
+    linear-gradient(315deg, rgba(85, 199, 247, 0.08), transparent 30%),
     linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
     linear-gradient(180deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px),
     var(--bg);
@@ -99,6 +103,7 @@ button:disabled {
   font-size: clamp(56px, 7vw, 78px);
   letter-spacing: 0.08em;
   line-height: 0.95;
+  text-shadow: 0 0 22px rgba(215, 165, 49, 0.28), 0 0 44px rgba(85, 199, 247, 0.12);
 }
 
 .onboarding-copy {
@@ -122,9 +127,10 @@ button:disabled {
 
 .onboarding-input {
   height: 64px;
-  border: 1px solid rgba(215, 165, 49, 0.35);
+  border: 1px solid rgba(85, 199, 247, 0.42);
   border-radius: 18px;
-  background: #101112;
+  background: rgba(17, 24, 39, 0.92);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025);
   color: var(--text);
   font-size: 26px;
   font-weight: 900;
@@ -133,7 +139,8 @@ button:disabled {
 }
 
 .onboarding-input:focus {
-  border-color: var(--gold);
+  border-color: var(--pink);
+  box-shadow: 0 0 0 4px rgba(255, 91, 214, 0.1);
 }
 
 .onboarding-facts {
@@ -147,7 +154,7 @@ button:disabled {
   padding: 8px 12px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--panel-2);
+  background: linear-gradient(135deg, rgba(85, 199, 247, 0.12), rgba(255, 91, 214, 0.08)), var(--panel-2);
   color: var(--muted);
   font-size: 13px;
   font-weight: 900;
@@ -184,7 +191,7 @@ button:disabled {
   padding: 24px 34px;
   border: 1px solid var(--line);
   border-radius: 28px;
-  background: #101112;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.035), rgba(85, 199, 247, 0.04)), #101827;
   color: var(--text);
   text-align: left;
   transition: 160ms ease;
@@ -192,8 +199,10 @@ button:disabled {
 
 .era-card:hover,
 .era-card.active {
-  border-color: rgba(215, 165, 49, 0.78);
-  background: #141107;
+  border-color: rgba(85, 199, 247, 0.72);
+  background: linear-gradient(135deg, rgba(215, 165, 49, 0.16), rgba(85, 199, 247, 0.09), rgba(255, 91, 214, 0.08)), #101827;
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.28);
+  transform: translateY(-1px);
 }
 
 .era-year {
@@ -204,7 +213,8 @@ button:disabled {
 }
 
 .era-card.active .era-year {
-  color: var(--gold);
+  color: var(--acid);
+  text-shadow: 0 0 18px rgba(183, 255, 74, 0.22);
 }
 
 .era-info strong {
@@ -264,9 +274,12 @@ button:disabled {
   align-items: center;
   min-height: 64px;
   padding: 0 22px;
-  border-bottom: 1px solid var(--line);
-  background: rgba(8, 9, 11, 0.96);
+  border-bottom: 1px solid rgba(85, 199, 247, 0.16);
+  background:
+    linear-gradient(90deg, rgba(85, 199, 247, 0.08), rgba(255, 91, 214, 0.055), rgba(215, 165, 49, 0.05)),
+    rgba(7, 10, 18, 0.96);
   backdrop-filter: blur(18px);
+  box-shadow: 0 12px 45px rgba(0, 0, 0, 0.24);
 }
 
 .brand {
@@ -281,13 +294,14 @@ button:disabled {
   width: 34px;
   height: 34px;
   place-items: center;
-  border: 1px solid rgba(215, 165, 49, 0.5);
+  border: 1px solid rgba(85, 199, 247, 0.56);
   border-radius: var(--radius);
-  background: #171204;
-  color: var(--gold-2);
+  background: linear-gradient(135deg, rgba(85, 199, 247, 0.2), rgba(255, 91, 214, 0.16), rgba(215, 165, 49, 0.18)), #111827;
+  color: var(--acid);
   font-family: "Bebas Neue", sans-serif;
   font-size: 21px;
   letter-spacing: 1px;
+  box-shadow: 0 0 22px rgba(85, 199, 247, 0.2);
 }
 
 .brand-name,
@@ -298,12 +312,13 @@ button:disabled {
 
 .brand-name {
   font-size: 23px;
-  color: var(--gold);
+  color: var(--text);
+  text-shadow: 0 0 20px rgba(240, 199, 109, 0.18);
 }
 
 .brand-sub {
   margin-top: -2px;
-  color: var(--muted-2);
+  color: var(--cyan);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -318,10 +333,10 @@ button:disabled {
   width: fit-content;
   min-height: 30px;
   padding: 0 12px;
-  border: 1px solid rgba(215, 165, 49, 0.35);
+  border: 1px solid rgba(85, 199, 247, 0.34);
   border-radius: 999px;
-  background: rgba(215, 165, 49, 0.1);
-  color: var(--gold-2);
+  background: rgba(85, 199, 247, 0.1);
+  color: var(--cyan);
   font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
@@ -333,8 +348,8 @@ button:disabled {
 
 .mode-button:hover,
 .text-button:hover {
-  border-color: rgba(215, 165, 49, 0.7);
-  color: var(--gold-2);
+  border-color: rgba(255, 91, 214, 0.68);
+  color: var(--pink);
 }
 
 .user-chip {
@@ -346,7 +361,7 @@ button:disabled {
   padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--panel-2);
+  background: rgba(17, 24, 39, 0.92);
   color: var(--muted);
   font-size: 11px;
   font-weight: 900;
@@ -383,8 +398,8 @@ button:disabled {
 }
 
 .switch-user-button:hover {
-  border-color: rgba(215, 165, 49, 0.7);
-  color: var(--gold-2);
+  border-color: rgba(255, 91, 214, 0.68);
+  color: var(--pink);
 }
 
 .text-button {
@@ -419,7 +434,7 @@ button:disabled {
 .progress-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--gold), var(--green), var(--cyan));
+  background: linear-gradient(90deg, var(--pink), var(--cyan), var(--acid));
   transition: width 350ms ease;
 }
 
@@ -436,7 +451,7 @@ button:disabled {
 }
 
 .stat-value {
-  color: var(--gold-2);
+  color: var(--acid);
   font-family: "Bebas Neue", Inter, sans-serif;
   font-size: 24px;
   letter-spacing: 0.06em;
@@ -453,7 +468,9 @@ button:disabled {
 .sidebar,
 .bill-panel {
   overflow: hidden;
-  background: rgba(9, 10, 12, 0.92);
+  background:
+    linear-gradient(180deg, rgba(85, 199, 247, 0.055), rgba(255, 91, 214, 0.025) 38%, transparent),
+    rgba(9, 12, 22, 0.94);
 }
 
 .sidebar {
@@ -503,9 +520,9 @@ button:disabled {
 
 .nav-button:hover,
 .nav-button.active {
-  background: #141207;
-  color: var(--gold-2);
-  border-left-color: var(--gold);
+  background: linear-gradient(90deg, rgba(85, 199, 247, 0.12), rgba(255, 91, 214, 0.06), transparent);
+  color: var(--text);
+  border-left-color: var(--pink);
 }
 
 .side-section {
@@ -514,7 +531,7 @@ button:disabled {
 }
 
 .section-kicker {
-  color: var(--muted-2);
+  color: var(--cyan);
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.14em;
@@ -575,9 +592,12 @@ button:disabled {
 .card,
 .metric,
 .panel-block {
-  border: 1px solid var(--line);
+  border: 1px solid rgba(85, 199, 247, 0.16);
   border-radius: var(--radius);
-  background: rgba(16, 18, 22, 0.94);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.035), rgba(85, 199, 247, 0.025)),
+    rgba(16, 24, 39, 0.94);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.22);
 }
 
 .card {
@@ -589,9 +609,9 @@ button:disabled {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 18px;
   align-items: center;
-  border-color: rgba(39, 199, 123, 0.28);
+  border-color: rgba(183, 255, 74, 0.28);
   background:
-    linear-gradient(135deg, rgba(39, 199, 123, 0.11), rgba(215, 165, 49, 0.05)),
+    linear-gradient(135deg, rgba(183, 255, 74, 0.11), rgba(85, 199, 247, 0.07), rgba(255, 91, 214, 0.05)),
     rgba(16, 18, 22, 0.94);
 }
 
@@ -607,10 +627,10 @@ button:disabled {
   display: grid;
   gap: 18px;
   padding: 26px;
-  border: 1px solid rgba(215, 165, 49, 0.24);
+  border: 1px solid rgba(85, 199, 247, 0.24);
   border-radius: var(--radius);
   background:
-    linear-gradient(135deg, rgba(215, 165, 49, 0.14), rgba(39, 199, 123, 0.06) 48%, rgba(85, 199, 247, 0.06)),
+    linear-gradient(135deg, rgba(255, 91, 214, 0.11), rgba(85, 199, 247, 0.08) 48%, rgba(183, 255, 74, 0.06)),
     var(--panel);
 }
 
@@ -621,7 +641,7 @@ button:disabled {
 }
 
 .hero-number {
-  color: var(--gold-2);
+  color: var(--acid);
   font-family: "Bebas Neue", Inter, sans-serif;
   font-size: clamp(56px, 7vw, 92px);
   letter-spacing: 0.05em;
@@ -630,7 +650,7 @@ button:disabled {
 
 .page-title {
   margin: 0;
-  color: var(--gold);
+  color: var(--text);
   font-family: "Bebas Neue", Inter, sans-serif;
   font-size: 34px;
   letter-spacing: 0.08em;
@@ -663,11 +683,12 @@ button:disabled {
 .stock-card,
 .style-card {
   position: relative;
+  overflow: hidden;
   min-height: 174px;
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.004)), var(--panel-2);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.04), rgba(85, 199, 247, 0.035)), var(--panel-2);
   color: var(--text);
   text-align: left;
   transition: border-color 150ms ease, transform 150ms ease, background 150ms ease;
@@ -676,8 +697,19 @@ button:disabled {
 .stock-card:hover,
 .style-card:hover,
 .interactive:hover {
-  border-color: rgba(215, 165, 49, 0.65);
-  transform: translateY(-1px);
+  border-color: rgba(255, 91, 214, 0.56);
+  transform: translateY(-2px);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.26), 0 0 0 1px rgba(255, 91, 214, 0.08);
+}
+
+.stock-card::before,
+.style-card::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--pink), var(--cyan), var(--acid));
+  content: "";
+  opacity: 0.75;
 }
 
 .ticker-badge {
@@ -687,8 +719,8 @@ button:disabled {
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius);
-  background: #1a1d23;
-  color: var(--gold-2);
+  background: linear-gradient(135deg, rgba(85, 199, 247, 0.15), rgba(255, 91, 214, 0.12)), #1a1d23;
+  color: var(--acid);
   font-weight: 900;
 }
 
@@ -750,9 +782,9 @@ button:disabled {
 }
 
 .filter-chip.active {
-  border-color: var(--gold);
-  background: rgba(215, 165, 49, 0.16);
-  color: var(--gold-2);
+  border-color: var(--pink);
+  background: rgba(255, 91, 214, 0.13);
+  color: var(--text);
 }
 
 .plain-button {
@@ -769,11 +801,12 @@ button:disabled {
 }
 
 .primary-button {
-  background: linear-gradient(135deg, var(--gold), var(--gold-2));
+  background: linear-gradient(135deg, var(--pink), var(--cyan));
+  box-shadow: 0 12px 30px rgba(85, 199, 247, 0.16);
 }
 
 .success-button {
-  background: linear-gradient(135deg, var(--green), #8ee3b8);
+  background: linear-gradient(135deg, var(--green), var(--acid));
 }
 
 .danger-button {
@@ -783,7 +816,7 @@ button:disabled {
 .icon-button {
   width: 38px;
   border: 1px solid var(--line);
-  background: var(--panel-2);
+  background: rgba(17, 24, 39, 0.94);
   color: var(--text);
 }
 
@@ -862,9 +895,9 @@ button:disabled {
 
 .table {
   overflow: hidden;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(85, 199, 247, 0.16);
   border-radius: var(--radius);
-  background: var(--panel);
+  background: rgba(11, 15, 26, 0.94);
 }
 
 .table-row {
@@ -893,11 +926,11 @@ button:disabled {
 .bill-header,
 .bill-input {
   padding: 14px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid rgba(85, 199, 247, 0.16);
 }
 
 .bill-input {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid rgba(85, 199, 247, 0.16);
   border-bottom: 0;
 }
 
@@ -907,8 +940,9 @@ button:disabled {
   height: 38px;
   place-items: center;
   border-radius: var(--radius);
-  background: linear-gradient(135deg, var(--gold), var(--green));
+  background: linear-gradient(135deg, var(--pink), var(--cyan), var(--acid));
   color: #050506;
+  box-shadow: 0 0 22px rgba(85, 199, 247, 0.2);
 }
 
 .quick-actions {
@@ -921,13 +955,18 @@ button:disabled {
   justify-content: flex-start;
   min-height: 34px;
   padding: 0 10px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(85, 199, 247, 0.16);
   border-radius: var(--radius);
-  background: var(--panel-2);
+  background: rgba(17, 24, 39, 0.94);
   color: var(--muted);
   font-size: 12px;
   font-weight: 800;
   text-align: left;
+}
+
+.quick-action:hover {
+  border-color: rgba(85, 199, 247, 0.5);
+  color: var(--text);
 }
 
 .chat-scroll {
@@ -950,19 +989,21 @@ button:disabled {
 .message {
   max-width: 86%;
   padding: 10px 12px;
-  border-radius: var(--radius);
+  border-radius: 14px;
   color: var(--text);
   font-size: 12px;
   line-height: 1.55;
 }
 
 .message.assistant {
-  border: 1px solid var(--line);
-  background: var(--panel-2);
+  border: 1px solid rgba(85, 199, 247, 0.2);
+  background:
+    linear-gradient(135deg, rgba(85, 199, 247, 0.08), rgba(255, 91, 214, 0.04)),
+    var(--panel-2);
 }
 
 .message.user {
-  background: linear-gradient(135deg, var(--gold), var(--gold-2));
+  background: linear-gradient(135deg, var(--pink), var(--cyan));
   color: #050506;
   font-weight: 800;
 }
@@ -993,7 +1034,7 @@ button:disabled {
 }
 
 .bill-answer strong {
-  color: var(--gold-2);
+  color: var(--acid);
   font-weight: 950;
 }
 
@@ -1198,12 +1239,12 @@ select.input {
 
 .step-marker.active,
 .step-marker.done {
-  color: var(--gold-2);
+  color: var(--acid);
 }
 
 .step-marker.active::before,
 .step-marker.done::before {
-  background: var(--gold);
+  background: linear-gradient(90deg, var(--pink), var(--cyan));
 }
 
 .metric-grid {
@@ -1231,17 +1272,17 @@ select.input {
 }
 
 .answer-option.selected {
-  border-color: var(--gold);
-  background: rgba(215, 165, 49, 0.13);
-  color: var(--gold-2);
+  border-color: var(--pink);
+  background: rgba(255, 91, 214, 0.12);
+  color: var(--text);
 }
 
 .quiz-card {
   margin-top: 12px;
   padding: 13px;
-  border: 1px solid rgba(215, 165, 49, 0.36);
+  border: 1px solid rgba(85, 199, 247, 0.3);
   border-radius: var(--radius);
-  background: rgba(215, 165, 49, 0.07);
+  background: linear-gradient(135deg, rgba(85, 199, 247, 0.11), rgba(255, 91, 214, 0.055));
 }
 
 .quiz-option {
