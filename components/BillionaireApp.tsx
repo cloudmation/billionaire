@@ -2443,20 +2443,26 @@ export function BillionaireApp() {
             {INVESTOR_APPRENTICESHIP.map((lesson, index) => {
               const active = index === activeLessonIndex;
               const done = index < activeLessonIndex;
+              const locked = index > activeLessonIndex;
               return (
                 <button
-                  className={clsx("curriculum-day", active && "active", done && "done")}
+                  aria-label={locked ? `Day ${lesson.day} locked until that learning day` : `Open Day ${lesson.day}: ${lesson.title}`}
+                  className={clsx("curriculum-day", active && "active", done && "done", locked && "locked")}
+                  disabled={locked}
                   key={lesson.day}
-                  onClick={() =>
+                  onClick={() => {
+                    if (locked) return;
                     sendBill(
-                      `Preview Day ${lesson.day} of the investor apprenticeship: ${lesson.title}. Keep it short, explain why this matters, and give one practice step.`
-                    )
-                  }
+                      active
+                        ? `Teach me Day ${lesson.day} of the investor apprenticeship: ${lesson.title}. Explain it for a 12-year-old and give one practice step.`
+                        : `Review Day ${lesson.day} of the investor apprenticeship: ${lesson.title}. Keep it short, remind me why this matters, and give one practice step.`
+                    );
+                  }}
                   type="button"
                 >
-                  <span>{lesson.day}</span>
+                  <span>{locked ? <Lock size={13} /> : lesson.day}</span>
                   <strong>{lesson.title}</strong>
-                  <small>{lesson.level}</small>
+                  <small>{locked ? `Locked until Day ${lesson.day}` : active ? "Today" : lesson.level}</small>
                 </button>
               );
             })}
