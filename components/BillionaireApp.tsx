@@ -94,10 +94,10 @@ type CustomTickerForm = {
 
 const navItems: Array<{ id: TabId; label: string; icon: typeof Home }> = [
   { id: "home", label: "Home", icon: Home },
-  { id: "market", label: "Stocks", icon: BarChart3 },
-  { id: "learn", label: "Skills", icon: BookOpen },
-  { id: "portfolio", label: "Lineup", icon: BriefcaseBusiness },
-  { id: "ladder", label: "Rank", icon: Trophy }
+  { id: "market", label: "Market", icon: BarChart3 },
+  { id: "learn", label: "Learn", icon: BookOpen },
+  { id: "portfolio", label: "Portfolio", icon: BriefcaseBusiness },
+  { id: "ladder", label: "Leaderboard", icon: Trophy }
 ];
 
 const sectorColors = ["#d7a531", "#27c77b", "#55c7f7", "#a78bfa", "#fb8a3c", "#f05d5e"];
@@ -1101,7 +1101,7 @@ export function BillionaireApp() {
           <div className="brand-mark">B</div>
           <div>
             <div className="brand-name">BILLIONAIRE</div>
-            <div className="brand-sub">Money strategy game</div>
+            <div className="brand-sub">Investing simulator</div>
           </div>
         </div>
         <div className="milestone-strip">
@@ -1167,7 +1167,7 @@ export function BillionaireApp() {
 
           <div className="side-section">
             <div className="space-between">
-              <div className="section-kicker">Daily quests</div>
+              <div className="section-kicker">Daily missions</div>
               <button className="text-button" onClick={resetTodayProgress} type="button">
                 <RotateCcw size={12} />
                 Reset
@@ -1185,7 +1185,7 @@ export function BillionaireApp() {
           </div>
 
           <div className="side-section">
-            <div className="section-kicker">Skill tree</div>
+            <div className="section-kicker">Learning paths</div>
             {STYLES.slice(0, 4).map((style) => {
               const progress =
                 style.id === "value" ? 68 : style.id === "growth" ? 32 : studiedStyles.includes(style.id) ? 20 : 0;
@@ -1438,7 +1438,7 @@ export function BillionaireApp() {
               <div className="section-kicker gold">Player profile</div>
               <h1 className="onboarding-title">Pick your investor name</h1>
               <p className="onboarding-copy">
-                Build your money game from $1,000. BILL keeps it simple, tracks your progress, and coaches every move.
+                Build an investing portfolio from $1,000. BILL keeps it simple, tracks your progress, and coaches every move.
               </p>
               <label className="onboarding-label">
                 Player name
@@ -1661,9 +1661,9 @@ export function BillionaireApp() {
 
   function renderHome() {
     const statCards = [
-      { label: "Cash stack", value: fmt(cash), color: "var(--text)" },
-      { label: "Stock power", value: fmt(stockValue), color: "var(--cyan)" },
-      { label: "Score move", value: `${gain >= 0 ? "+" : ""}${fmt(gain)}`, color: gain >= 0 ? "var(--green)" : "var(--red)" },
+      { label: "Cash", value: fmt(cash), color: "var(--text)" },
+      { label: "Investments", value: fmt(stockValue), color: "var(--cyan)" },
+      { label: "Gain/Loss", value: `${gain >= 0 ? "+" : ""}${fmt(gain)}`, color: gain >= 0 ? "var(--green)" : "var(--red)" },
       {
         label: "Next level",
         value: nextMilestone ? `${fmtCompact(nextMilestone.amount - netWorth)} away` : "Complete",
@@ -1723,7 +1723,7 @@ export function BillionaireApp() {
 
         <section className="card checkin-card">
           <div>
-            <div className="section-kicker gold">Daily drop</div>
+            <div className="section-kicker gold">Daily check-in</div>
             <h2 className="display" style={{ color: checkedInToday ? "var(--green)" : "var(--gold-2)", fontSize: 36, margin: "8px 0 4px" }}>
               {checkedInToday ? "Checked in today" : `Claim ${fmt(availableCheckInReward)}`}
             </h2>
@@ -1748,7 +1748,7 @@ export function BillionaireApp() {
         <div className="grid-2">
           <section className="card">
             <div className="space-between">
-              <div className="section-kicker">Daily quests</div>
+              <div className="section-kicker">Daily missions</div>
               <button className="text-button" onClick={resetTodayProgress} type="button">
                 <RotateCcw size={12} />
                 Reset today
@@ -1778,7 +1778,7 @@ export function BillionaireApp() {
           </section>
 
           <section className="card">
-            <div className="section-kicker">My lineup</div>
+            <div className="section-kicker">Portfolio</div>
             <div className="chart-frame" style={{ height: 210 }}>
               <HoldingsBars holdings={holdings} stocks={allStocks} />
             </div>
@@ -1792,7 +1792,7 @@ export function BillionaireApp() {
     return (
       <div className="fade-in">
         <div className="space-between" style={{ alignItems: "flex-start", marginBottom: 4 }}>
-          <SectionHeader title={`Stock Arena · ${marketDateLabel}`} subtitle="Pick a company, run the wizard, then make the move." />
+          <SectionHeader title={`Market · ${marketDateLabel}`} subtitle="Pick a company, run the wizard, then make the move." />
           <div className="row" style={{ justifyContent: "flex-end", flexWrap: "wrap" }}>
             <button className="plain-button" onClick={() => setAddTickerOpen(true)} type="button">
               <Plus size={16} />
@@ -1881,13 +1881,13 @@ export function BillionaireApp() {
         <div className="fade-in stack">
           <button className="plain-button" onClick={() => setLearnStyle(null)} type="button">
             <ChevronLeft size={16} />
-            Skill tree
+            Learning paths
           </button>
           <section className="hero-card" style={{ borderColor: `${style.color}55`, background: `linear-gradient(135deg, ${style.tint}, rgba(16,18,22,0.96))` }}>
             <div className="space-between">
               <div>
                 <div className="section-kicker" style={{ color: style.color }}>
-                  Skill path
+                  Investing style
                 </div>
                 <div className="display" style={{ color: style.color, fontSize: 54 }}>
                   {style.label} Investing
@@ -2018,10 +2018,10 @@ export function BillionaireApp() {
   function renderPortfolio() {
     return (
       <div className="fade-in stack">
-        <SectionHeader title="My Lineup" subtitle="Your stocks, cash, gains, and risk in one clean view." />
+        <SectionHeader title="Portfolio" subtitle="Your stocks, cash, gains, and risk in one clean view." />
         <div className="grid-2">
           <section className="card">
-            <div className="section-kicker">Lineup value</div>
+            <div className="section-kicker">Portfolio value</div>
             <div className="display" style={{ color: "var(--green)", fontSize: 44, marginTop: 6 }}>
               {fmt(stockValue)}
             </div>
@@ -2100,7 +2100,7 @@ export function BillionaireApp() {
     const myRank = leaderboardRows.find((entry) => leaderboardKey(entry.userName) === leaderboardKey(userName))?.rank ?? 1;
     return (
       <div className="fade-in stack" style={{ maxWidth: 940 }}>
-        <SectionHeader title="Leaderboard" subtitle="See who is climbing the money game." />
+        <SectionHeader title="Leaderboard" subtitle="Compare investors by net worth, holdings, and learning progress." />
         <section className="card leaderboard-card">
           <div className="space-between leaderboard-summary">
             <div>
@@ -2110,7 +2110,7 @@ export function BillionaireApp() {
               </div>
             </div>
             <div className="leaderboard-score">
-              <span className="muted">Current score</span>
+              <span className="muted">Net worth</span>
               <strong>{fmt(netWorth)}</strong>
             </div>
           </div>
@@ -2120,7 +2120,7 @@ export function BillionaireApp() {
               <span>Rank</span>
               <span>Investor</span>
               <span>Net worth</span>
-              <span>Progress</span>
+              <span>Activity</span>
             </div>
             {leaderboardRows.map((entry) => {
               const isYou = leaderboardKey(entry.userName) === leaderboardKey(userName);
@@ -2152,7 +2152,7 @@ export function BillionaireApp() {
         </section>
 
         <section>
-          <SectionHeader title="Billion Dollar Ladder" subtitle="Hit levels, unlock harder skills, and keep climbing." />
+          <SectionHeader title="Milestones" subtitle="Reach net worth levels and unlock harder investing concepts." />
           {MILESTONES.map((milestone, index) => {
             const reached = netWorth >= milestone.amount;
             const current = index === milestoneIndex;
