@@ -52,6 +52,7 @@ These rules supersede older language elsewhere in the spec if there is a conflic
   - 1 simulated trading day unlocks about every 5 minutes 43 seconds.
   - Weekends and market holidays are skipped by walking through real historical trading dates.
 - The UI should show the simulated market date, not just the year.
+- The UI should also show the simulated trading day count, such as `Sim Day 1 · Jan 3, 2000`, anywhere the Time Machine date is used as the main page/time label.
 - Portfolio value, trading prices, BILL context, leaderboard net worth, and stock cards must all use the same simulated market date.
 - The simulation caps at the latest available historical market date.
 

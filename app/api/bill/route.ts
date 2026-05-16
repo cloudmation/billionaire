@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
-import { DEFAULT_YEAR, fmt, getMarketDate, getMarketStocks, getMarketYear } from "@/lib/game-data";
+import { DEFAULT_YEAR, fmt, getMarketDate, getMarketStocks, getMarketYear, getSimulatedMarketDay } from "@/lib/game-data";
 import { logBillMessages } from "@/lib/db";
 import type { BillMessage, GameProgressPayload, Stock, TabId } from "@/lib/types";
 
@@ -45,6 +45,10 @@ function buildInstructions(context?: BillContext) {
   const netWorth = (context?.progress?.cash ?? 0) + portfolioValueFor(context?.progress);
   const marketDate = context?.progress ? getMarketDate(context.progress) : `${DEFAULT_YEAR}-01-01`;
   const marketYear = context?.progress ? getMarketYear(context.progress) : DEFAULT_YEAR;
+  const simulatedMarketDay =
+    context?.progress && context.progress.gameMode !== "live"
+      ? getSimulatedMarketDay(context.progress.startYear, context.progress.journeyStartedAt)
+      : null;
   const answeredQuestions = (context?.progress?.quizHistory ?? [])
     .flatMap((quiz) => quiz.questions ?? [])
     .slice(0, 30);
@@ -82,6 +86,7 @@ Player context:
 - Time Machine start year: ${context?.progress?.startYear ?? DEFAULT_YEAR}
 - Current market date shown to player: ${marketDate}
 - Current market year shown to player: ${marketYear}
+- Current simulated trading day shown to player: ${simulatedMarketDay ?? "Live Market does not use simulated day count"}
 - Player name: ${context?.progress?.userName ?? "Investor"}
 - Player age: ${context?.progress?.playerAge ?? 12}
 - Game mode: ${context?.progress?.gameMode === "live" ? "Live Market" : "Time Machine"}

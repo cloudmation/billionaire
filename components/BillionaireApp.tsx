@@ -43,6 +43,7 @@ import {
   getMarketYear,
   getMilestoneIndex,
   getMilestoneProgress,
+  getSimulatedMarketDay,
   getStockChartData,
   MILESTONES,
   MISSIONS,
@@ -858,10 +859,12 @@ export function BillionaireApp() {
   const isLiveMode = gameMode === "live";
   const marketDate = getMarketDate({ gameMode, startYear, journeyStartedAt }, marketNow);
   const marketYear = getMarketYear({ gameMode, startYear, journeyStartedAt }, marketNow);
+  const simulatedMarketDay = isLiveMode ? null : getSimulatedMarketDay(startYear, journeyStartedAt, marketNow);
   const formattedMarketDate = isLiveMode ? "Today" : formatMarketDate(marketDate);
+  const simulatedMarketLabel = simulatedMarketDay ? `Sim Day ${simulatedMarketDay} · ${formattedMarketDate}` : formattedMarketDate;
   const currentEra = ERAS.find((era) => era.year === startYear) ?? ERAS.find((era) => era.year === DEFAULT_YEAR)!;
-  const modeLabel = isLiveMode ? "Live Market" : `Time Machine · ${formattedMarketDate}`;
-  const marketDateLabel = formattedMarketDate;
+  const modeLabel = isLiveMode ? "Live Market" : `Time Machine · ${simulatedMarketLabel}`;
+  const marketDateLabel = isLiveMode ? formattedMarketDate : simulatedMarketLabel;
   const checkedInToday = lastCheckInDate === getLocalDateKey();
   const activeCheckInStreak = getActiveCheckInStreak(lastCheckInDate, checkInStreak);
   const nextCheckInStreak = getNextCheckInStreak(lastCheckInDate, checkInStreak);
@@ -906,7 +909,7 @@ export function BillionaireApp() {
   }, [messages, billLoading, billQuiz]);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setMarketNow(new Date()), 30_000);
+    const timer = window.setInterval(() => setMarketNow(new Date()), 5_000);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -2034,7 +2037,7 @@ export function BillionaireApp() {
         <div className="hero-grid">
           <section className="hero-card">
             <div>
-              <div className="section-kicker gold">Your net worth · {isLiveMode ? "Live Market" : formattedMarketDate}</div>
+              <div className="section-kicker gold">Your net worth · {isLiveMode ? "Live Market" : simulatedMarketLabel}</div>
               <div className="hero-number">{fmt(displayNetWorth || netWorth)}</div>
               <div className="row" style={{ marginTop: 8, flexWrap: "wrap" }}>
                 <span className="green" style={{ fontWeight: 900 }}>
@@ -2049,7 +2052,7 @@ export function BillionaireApp() {
           </section>
 
           <section className="card">
-            <div className="section-kicker gold">{isLiveMode ? "Market mode" : `Time Machine date · ${formattedMarketDate}`}</div>
+            <div className="section-kicker gold">{isLiveMode ? "Market mode" : `Time Machine · ${simulatedMarketLabel}`}</div>
             <h2 className="display" style={{ fontSize: 44, margin: "8px 0 4px", color: "rgba(240,199,109,0.9)" }}>
               {isLiveMode ? "LIVE" : marketYear}
             </h2>

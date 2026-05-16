@@ -1107,6 +1107,16 @@ export function getSimulatedMarketDate(startYear: number, journeyStartedAt?: str
   return MARKET_DATES[Math.min(MARKET_DATES.length - 1, startIndex + elapsedMarketDays)] ?? MAX_MARKET_DATE;
 }
 
+export function getSimulatedMarketDay(startYear: number, journeyStartedAt?: string | null, now = new Date()) {
+  const startIndex = findFirstDateIndexOnOrAfter(dateForYearStart(startYear));
+  if (!journeyStartedAt) return 1;
+  const started = new Date(journeyStartedAt);
+  if (Number.isNaN(started.getTime())) return 1;
+  const elapsedMarketDays = Math.max(0, Math.floor((now.getTime() - started.getTime()) / SIMULATED_MARKET_DAY_MS));
+  const currentIndex = Math.min(MARKET_DATES.length - 1, startIndex + elapsedMarketDays);
+  return Math.max(1, currentIndex - startIndex + 1);
+}
+
 export function getSimulatedYear(startYear: number, journeyStartedAt?: string | null, now = new Date()) {
   return Number(getSimulatedMarketDate(startYear, journeyStartedAt, now).slice(0, 4));
 }
