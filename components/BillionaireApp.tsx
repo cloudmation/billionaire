@@ -36,6 +36,7 @@ import {
   CONCEPTS,
   DEFAULT_YEAR,
   ERAS,
+  companySnapshotFor,
   fmt,
   fmtCompact,
   getMarketDate,
@@ -732,6 +733,48 @@ function StockPriceChart({
         <span>{hasLine ? fmt(last.value) : "Line appears after the next simulated trading day"}</span>
       </div>
     </div>
+  );
+}
+
+function CompanySnapshotCard({
+  onDigDeeper,
+  stock
+}: {
+  onDigDeeper: () => void;
+  stock: Stock;
+}) {
+  const snapshot = companySnapshotFor(stock);
+  return (
+    <section className="card company-snapshot-card">
+      <div className="space-between company-snapshot-head">
+        <div>
+          <div className="section-kicker">Company snapshot</div>
+          <h2>{stock.name}</h2>
+        </div>
+        <span className="mode-pill">{stock.sector}</span>
+      </div>
+      <div className="company-snapshot-grid">
+        <div className="company-snapshot-block">
+          <span>What it does</span>
+          <p>{snapshot.does}</p>
+        </div>
+        <div className="company-snapshot-block">
+          <span>How it makes money</span>
+          <p>{snapshot.makesMoney}</p>
+        </div>
+        <div className="company-snapshot-block">
+          <span>Investor insight</span>
+          <p>{snapshot.insight}</p>
+        </div>
+      </div>
+      <div className="company-snapshot-footer">
+        <p>{snapshot.digDeeper}</p>
+        <button className="plain-button" onClick={onDigDeeper} type="button">
+          Ask BILL to dig deeper
+          <ArrowRight size={15} />
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -2469,6 +2512,7 @@ export function BillionaireApp() {
           {filteredStocks.map((stock) => {
             const owned = holdings.find((holding) => holding.sym === stock.sym);
             const isCustom = customStocks.some((candidate) => candidate.sym === stock.sym);
+            const snapshot = companySnapshotFor(stock);
             return (
               <button className="stock-card" key={stock.sym} onClick={() => openWizard(stock)} type="button">
                 {owned ? <div className="owned-pill">Owned</div> : null}
@@ -2493,8 +2537,16 @@ export function BillionaireApp() {
                   </div>
                 </div>
                 <p className="muted" style={{ margin: "8px 0 0", fontSize: 12, lineHeight: 1.45 }}>
-                  {stock.desc}
+                  {snapshot.does}
                 </p>
+                <div className="stock-card-summary">
+                  <span>Money engine</span>
+                  <p>{snapshot.makesMoney}</p>
+                </div>
+                <div className="stock-card-summary">
+                  <span>Investor clue</span>
+                  <p>{snapshot.insight}</p>
+                </div>
                 {stock.since2010 !== 0 ? (
                   <div className="gold" style={{ marginTop: 10, fontSize: 12, fontWeight: 900 }}>
                     Run so far: {stock.since2010 >= 0 ? "+" : ""}
@@ -3062,6 +3114,7 @@ export function BillionaireApp() {
   function renderWizard() {
     if (!wizard) return null;
     const stock = currentWizardStock ?? wizard.stock;
+    const snapshot = companySnapshotFor(stock);
     const style = selectedWizardStyle;
     const metrics = style ? styleMetrics(stock, style.id) : [];
     const ownedShares = holdings.find((holding) => holding.sym === stock.sym)?.shares ?? 0;
@@ -3113,6 +3166,15 @@ export function BillionaireApp() {
             <section className="card stock-detail-chart">
               <StockPriceChart data={wizardChartData} stock={stock} />
             </section>
+
+            <CompanySnapshotCard
+              onDigDeeper={() =>
+                sendBill(
+                  `Teach me about ${stock.sym} (${stock.name}) for a 12-year-old investor. Explain what the company does, how it makes money, its sector, one big opportunity, one big risk, and one question I should research next. Use this clue: ${snapshot.digDeeper}`
+                )
+              }
+              stock={stock}
+            />
 
             {wizard.step === 0 ? (
               <div className="stack">

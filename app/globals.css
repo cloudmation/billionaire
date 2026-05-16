@@ -946,6 +946,90 @@ button:disabled {
   opacity: 0.75;
 }
 
+.stock-card-summary {
+  margin-top: 10px;
+  padding: 9px;
+  border: 1px solid rgba(85, 199, 247, 0.14);
+  border-radius: 8px;
+  background: rgba(7, 10, 18, 0.32);
+}
+
+.stock-card-summary span,
+.company-snapshot-block span {
+  display: block;
+  color: var(--cyan);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.stock-card-summary p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.company-snapshot-card {
+  border-color: rgba(85, 199, 247, 0.24);
+  background:
+    linear-gradient(135deg, rgba(85, 199, 247, 0.1), rgba(183, 255, 74, 0.055)),
+    rgba(10, 15, 24, 0.94);
+}
+
+.company-snapshot-head {
+  gap: 12px;
+}
+
+.company-snapshot-head h2 {
+  margin: 4px 0 0;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.company-snapshot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.company-snapshot-block {
+  min-height: 126px;
+  padding: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(5, 7, 12, 0.42);
+}
+
+.company-snapshot-block p {
+  margin: 8px 0 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.company-snapshot-footer {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.company-snapshot-footer p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
 .apprenticeship-card {
   position: relative;
   overflow: hidden;
@@ -2241,6 +2325,15 @@ select.input {
   }
 
   .leaderboard-summary {
+    flex-direction: column;
+  }
+
+  .company-snapshot-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .company-snapshot-footer {
+    align-items: stretch;
     flex-direction: column;
   }
 

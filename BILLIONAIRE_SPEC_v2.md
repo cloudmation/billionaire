@@ -77,6 +77,8 @@ These rules supersede older language elsewhere in the spec if there is a conflic
 - Current required tickers include Apple, Amazon, Netflix, Tesla, Google, Nvidia, Cisco, Nike, Disney, Starbucks, Roblox, Spotify, Duolingo, Berkshire Hathaway, Coca-Cola, Johnson & Johnson, Procter & Gamble, Walmart, JPMorgan Chase, Exxon Mobil, Chevron, Pfizer, Verizon, and AT&T.
 - The market universe should include enough value-oriented companies for the Value Investing path: lower P/E businesses, dividend payers, defensive sectors, financials, energy, healthcare, and consumer staples.
 - Cisco (`CSCO`) is explicitly required.
+- Each ticker should teach the business, not only the stock price: show what the company does, its sector, how it makes money, an investor insight, and a prompt for deeper research.
+- Stock detail pages should include a kid-friendly company snapshot and a direct way to ask BILL for a deeper explanation of that business.
 - Users can add custom tickers from the UI.
 - Custom tickers should appear in the Market list and be usable in portfolio calculations.
 - Custom tickers do not have historical daily data unless added later; they use user-entered price data.

@@ -491,6 +491,171 @@ export const STOCKS: Stock[] = [
   }
 ];
 
+export type CompanySnapshot = {
+  does: string;
+  makesMoney: string;
+  insight: string;
+  digDeeper: string;
+};
+
+export const COMPANY_SNAPSHOTS: Record<string, CompanySnapshot> = {
+  AAPL: {
+    does: "Makes iPhones, Macs, wearables, apps, and services that work together.",
+    makesMoney: "Sells devices first, then earns recurring money from App Store, iCloud, AppleCare, payments, and subscriptions.",
+    insight: "Watch the ecosystem: loyal customers can make revenue steadier than a one-time gadget sale.",
+    digDeeper: "Ask whether services growth can protect profits if iPhone upgrades slow."
+  },
+  AMZN: {
+    does: "Runs online stores, delivery networks, cloud computing, ads, and Prime memberships.",
+    makesMoney: "Collects retail margins, seller fees, Prime subscriptions, advertising fees, and high-margin AWS cloud revenue.",
+    insight: "One ticker can hide several businesses; AWS and ads may matter more to profit than shopping volume.",
+    digDeeper: "Compare Amazon's revenue growth with its operating profit to see which businesses carry earnings."
+  },
+  NFLX: {
+    does: "Streams shows, movies, live events, and games to paying members around the world.",
+    makesMoney: "Charges monthly subscriptions and earns some advertising revenue from lower-priced plans.",
+    insight: "Content is both the product and the cost; great shows can build loyalty, but they are expensive.",
+    digDeeper: "Check subscriber growth, price increases, and whether content spending turns into durable profit."
+  },
+  TSLA: {
+    does: "Builds electric vehicles, batteries, charging products, and energy systems.",
+    makesMoney: "Sells cars and energy products, plus software, charging, service, and regulatory credits.",
+    insight: "High expectations can make valuation sensitive; growth must eventually show up as durable profit.",
+    digDeeper: "Separate car margins from software and energy dreams before judging the stock."
+  },
+  GOOGL: {
+    does: "Runs Google Search, YouTube, Android, Chrome, cloud services, maps, and AI tools.",
+    makesMoney: "Mostly sells ads, with additional revenue from cloud subscriptions, app fees, hardware, and YouTube services.",
+    insight: "Search is a powerful habit business, but AI could change how people find information.",
+    digDeeper: "Study whether Cloud and AI can grow without weakening the core ad machine."
+  },
+  NVDA: {
+    does: "Designs chips and software used for AI, data centers, gaming, graphics, and simulation.",
+    makesMoney: "Sells GPUs, networking gear, systems, and software tools to cloud providers, companies, and gamers.",
+    insight: "A great product can still be cyclical if customers overbuild; watch demand and supply together.",
+    digDeeper: "Ask how long Nvidia's chip lead and CUDA software ecosystem can protect margins."
+  },
+  CSCO: {
+    does: "Sells networking, security, collaboration, and infrastructure tools for businesses.",
+    makesMoney: "Earns from hardware, software licenses, support contracts, subscriptions, and cybersecurity products.",
+    insight: "Installed-base businesses can be steady because replacing core network equipment is hard.",
+    digDeeper: "Check whether software and security growth can offset slower hardware cycles."
+  },
+  NKE: {
+    does: "Designs and sells athletic shoes, apparel, and sports gear.",
+    makesMoney: "Sells products through Nike stores, apps, wholesale retailers, and licensed brand deals.",
+    insight: "Brand is the moat; inventory, fashion cycles, and competition can still pressure margins.",
+    digDeeper: "Watch whether direct-to-consumer sales improve profit or create extra marketing costs."
+  },
+  DIS: {
+    does: "Owns theme parks, movies, TV networks, streaming services, sports media, and character brands.",
+    makesMoney: "Earns from parks, cruises, streaming subscriptions, ads, theater releases, licensing, and merchandise.",
+    insight: "Disney's characters can be reused across parks, movies, and products, which is powerful when execution works.",
+    digDeeper: "Compare parks cash flow with streaming profitability to see what funds the business."
+  },
+  SBUX: {
+    does: "Operates coffee shops and sells packaged coffee, drinks, food, and rewards experiences.",
+    makesMoney: "Makes money from company stores, licensed stores, packaged goods, and customer rewards spending.",
+    insight: "A habit business can be valuable, but traffic, labor costs, and store experience matter.",
+    digDeeper: "Look for same-store sales growth and whether price increases hurt visit frequency."
+  },
+  "BRK-B": {
+    does: "Owns a collection of insurance, railroad, energy, manufacturing, retail, and investment businesses.",
+    makesMoney: "Collects insurance float, operating profits, investment income, and cash flows from owned companies.",
+    insight: "This is a portfolio inside one stock; capital allocation is the main skill to study.",
+    digDeeper: "Learn how insurance float gives Berkshire cash to invest before claims are paid."
+  },
+  KO: {
+    does: "Owns beverage brands and sells drink concentrates, syrups, and finished products worldwide.",
+    makesMoney: "Earns from concentrate sales, bottling partnerships, licensing, and global distribution.",
+    insight: "Small repeat purchases can create a huge business when brand and distribution are global.",
+    digDeeper: "Ask how pricing power and volume growth work together in a mature consumer brand."
+  },
+  JNJ: {
+    does: "Develops medicines and medical technology used by patients, doctors, and hospitals.",
+    makesMoney: "Sells pharmaceuticals, medical devices, and healthcare products, often through long product cycles.",
+    insight: "Healthcare demand can be steady, but patents, regulation, and lawsuits create special risks.",
+    digDeeper: "Study patent cliffs: what happens when a drug loses exclusivity?"
+  },
+  PG: {
+    does: "Sells everyday household and personal-care brands like detergents, diapers, razors, and hygiene products.",
+    makesMoney: "Earns from repeat purchases through supermarkets, retailers, and online channels.",
+    insight: "Everyday necessities can be defensive because people keep buying them in weak economies.",
+    digDeeper: "Check whether brand strength lets P&G raise prices without losing customers."
+  },
+  WMT: {
+    does: "Runs discount stores, grocery stores, e-commerce, delivery, memberships, and marketplace services.",
+    makesMoney: "Earns from retail sales, grocery volume, marketplace fees, memberships, advertising, and financial services.",
+    insight: "Scale is the moat; tiny margins can still create large profits when sales volume is enormous.",
+    digDeeper: "Compare sales growth with operating margin to see how efficient Walmart is."
+  },
+  JPM: {
+    does: "Provides banking, credit cards, loans, trading, investment banking, and asset management.",
+    makesMoney: "Earns interest spreads, card fees, advisory fees, trading revenue, and asset-management fees.",
+    insight: "Banks are confidence businesses; credit quality and interest rates can change results quickly.",
+    digDeeper: "Learn net interest income and loan losses before judging bank profits."
+  },
+  XOM: {
+    does: "Explores, produces, refines, transports, and sells oil, gas, fuels, chemicals, and energy products.",
+    makesMoney: "Earns from commodity production, refining margins, chemicals, and global energy sales.",
+    insight: "Energy profits can swing with oil and gas prices, so cash discipline matters.",
+    digDeeper: "Ask how Exxon handles boom-and-bust cycles without overpaying for growth."
+  },
+  CVX: {
+    does: "Produces oil and gas, refines fuels, sells energy products, and runs chemical operations.",
+    makesMoney: "Earns from upstream production, refining, marketing, chemicals, and energy trading.",
+    insight: "A dividend can look attractive, but it depends on cash flow through energy cycles.",
+    digDeeper: "Study free cash flow after capital spending to judge dividend strength."
+  },
+  PFE: {
+    does: "Researches, manufactures, and sells medicines and vaccines.",
+    makesMoney: "Sells patented drugs, vaccines, specialty medicines, and new products from its research pipeline.",
+    insight: "A low P/E can be a clue, but pharma investors must check whether future drugs replace fading ones.",
+    digDeeper: "Compare current blockbuster drugs with the pipeline of medicines still in development."
+  },
+  VZ: {
+    does: "Provides wireless phone service, broadband, business networking, and connectivity infrastructure.",
+    makesMoney: "Collects monthly service bills, device payments, business contracts, and broadband fees.",
+    insight: "Telecom can generate steady cash, but networks require huge spending to stay competitive.",
+    digDeeper: "Ask whether cash flow covers network upgrades, debt, and dividends."
+  },
+  T: {
+    does: "Provides wireless, fiber internet, broadband, and business connectivity services.",
+    makesMoney: "Collects monthly wireless and broadband bills, device payments, and business service fees.",
+    insight: "High yield can be tempting, but debt and capital spending can limit flexibility.",
+    digDeeper: "Look at debt, free cash flow, and customer churn before trusting the dividend."
+  },
+  RBLX: {
+    does: "Runs an online platform where users play, create, and share games and virtual worlds.",
+    makesMoney: "Sells Robux virtual currency, creator marketplace items, ads, and platform services.",
+    insight: "User growth is exciting, but the business must turn engagement into profitable cash flow.",
+    digDeeper: "Check bookings, daily active users, and whether creator payouts leave enough profit."
+  },
+  SPOT: {
+    does: "Streams music, podcasts, and audiobooks to free and paid users around the world.",
+    makesMoney: "Earns from Premium subscriptions and advertising, then pays royalties to rights holders.",
+    insight: "Scale helps, but royalty costs mean profit depends on pricing power and operating discipline.",
+    digDeeper: "Ask how Spotify can improve margins while keeping artists, labels, and users happy."
+  },
+  DUOL: {
+    does: "Provides language learning through a game-like app, subscriptions, tests, and learning tools.",
+    makesMoney: "Earns from subscriptions, ads, certification tests, and in-app purchases.",
+    insight: "A strong habit loop can lower marketing costs because users come back on their own.",
+    digDeeper: "Study whether free users convert into paid subscribers without hurting growth."
+  }
+};
+
+export function companySnapshotFor(stock: Pick<Stock, "sym" | "name" | "sector" | "desc" | "moat">): CompanySnapshot {
+  return (
+    COMPANY_SNAPSHOTS[stock.sym] ?? {
+      does: stock.desc,
+      makesMoney: "Uses its products or services to earn revenue. Research the annual report to see the exact mix.",
+      insight: `${stock.sector} companies can look similar, but the moat matters: ${stock.moat}.`,
+      digDeeper: `Ask BILL to explain ${stock.name}'s revenue, competitors, and biggest risk in simple terms.`
+    }
+  );
+}
+
 export const MAX_MARKET_YEAR = 2026;
 export const SIMULATED_MARKET_DAY_MS = 5 * 60 * 1000;
 
