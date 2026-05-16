@@ -185,6 +185,19 @@ function formatCountdown(ms: number) {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
+function learningDayIndexFromJourney(journeyStartedAt: string | null, now: Date) {
+  if (!journeyStartedAt) return 0;
+  const started = new Date(journeyStartedAt);
+  if (Number.isNaN(started.getTime())) return 0;
+  const startKey = getLocalDateKey(started);
+  const nowKey = getLocalDateKey(now);
+  const [startYear, startMonth, startDay] = startKey.split("-").map(Number);
+  const [nowYear, nowMonth, nowDay] = nowKey.split("-").map(Number);
+  const startUtc = Date.UTC(startYear, startMonth - 1, startDay);
+  const nowUtc = Date.UTC(nowYear, nowMonth - 1, nowDay);
+  return Math.max(0, Math.floor((nowUtc - startUtc) / 86_400_000));
+}
+
 function cleanBillText(raw: string) {
   return raw.replace(/\[\/?QUIZ\]/g, "").trim();
 }
@@ -944,10 +957,9 @@ export function BillionaireApp() {
     () => new Set(quizHistory.flatMap((quiz) => quiz.questions ?? [])),
     [quizHistory]
   );
-  const learningSignalCount = Math.max(0, studiedStyles.length - 1) + quizHistory.length + sideQuestHistory.length;
   const activeLessonIndex = Math.min(
     INVESTOR_APPRENTICESHIP.length - 1,
-    Math.max(0, activeCheckInStreak - 1, Math.floor(learningSignalCount / 2))
+    learningDayIndexFromJourney(journeyStartedAt, marketNow)
   );
   const activeLesson = INVESTOR_APPRENTICESHIP[activeLessonIndex];
   const learningProgress = (activeLessonIndex + 1) / INVESTOR_APPRENTICESHIP.length;

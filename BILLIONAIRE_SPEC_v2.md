@@ -121,7 +121,9 @@ These rules supersede older language elsewhere in the spec if there is a conflic
   - A personal investor letter.
 - BILL should be able to teach the active lesson, preview future lessons, and quiz the player on the current lesson.
 - Progress should be guided by learning activity and daily check-ins, not raw trading volume alone.
-- Lessons after the active learning day should be visibly locked and unavailable until the player reaches that day.
+- The active learning day is based on the player's local calendar day since starting the journey: start day is Day 1, tomorrow is Day 2, and so on.
+- Quizzes, side quests, and concept activity should not unlock future learning days early.
+- Lessons after the active learning day should be visibly locked and unavailable until the player reaches that calendar day.
 - Daily learning missions should track individual concepts learned that local day, show visible progress such as `2/3 concepts today`, and complete only when the daily concept goal is reached.
 
 ### Quiz Rules
