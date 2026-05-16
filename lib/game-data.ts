@@ -1119,6 +1119,36 @@ export function getMarketYear(progress: Pick<GameProgressPayload, "gameMode" | "
   return Number(getMarketDate(progress, now).slice(0, 4));
 }
 
+function sampleRows(rows: DailyPriceRow[], maxPoints: number) {
+  if (rows.length <= maxPoints) return rows;
+  const sampled: DailyPriceRow[] = [];
+  const step = (rows.length - 1) / (maxPoints - 1);
+  for (let index = 0; index < maxPoints; index += 1) {
+    sampled.push(rows[Math.round(index * step)]);
+  }
+  return sampled;
+}
+
+export function getStockChartData(
+  sym: string,
+  progress: Pick<GameProgressPayload, "gameMode" | "startYear" | "journeyStartedAt">,
+  now = new Date(),
+  maxPoints = 120
+) {
+  const rows = DAILY_PRICES[sym] ?? [];
+  if (!rows.length) return [];
+  const marketDate = getMarketDate(progress, now);
+  const currentIndex = findRowIndexOnOrBefore(rows, marketDate);
+  if (currentIndex < 0) return [];
+
+  const firstIndex = Math.max(0, currentIndex - 251);
+  const visibleRows = rows.slice(firstIndex, currentIndex + 1);
+  return sampleRows(visibleRows, maxPoints).map(([date, value]) => ({
+    date,
+    value: roundMoney(value)
+  }));
+}
+
 export function getMarketStocks(
   progress: Pick<GameProgressPayload, "gameMode" | "startYear" | "journeyStartedAt" | "customStocks">,
   now = new Date()

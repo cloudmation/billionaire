@@ -42,6 +42,7 @@ import {
   getMarketYear,
   getMilestoneIndex,
   getMilestoneProgress,
+  getStockChartData,
   MILESTONES,
   MISSIONS,
   pct,
@@ -566,6 +567,90 @@ function SparklineSvg({
   );
 }
 
+function StockPriceChart({
+  data,
+  stock
+}: {
+  data: Array<{ date: string; value: number }>;
+  stock: Stock;
+}) {
+  if (data.length < 2) {
+    return (
+      <div className="empty-state" style={{ minHeight: 180 }}>
+        <strong>No price chart yet</strong>
+        <span>{stock.sym} needs more historical points for a chart in this mode.</span>
+      </div>
+    );
+  }
+
+  const width = 720;
+  const height = 240;
+  const padX = 24;
+  const padY = 22;
+  const values = data.map((item) => item.value);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = Math.max(0.01, max - min);
+  const point = (value: number, index: number) => {
+    const x = padX + (index / Math.max(1, data.length - 1)) * (width - padX * 2);
+    const y = height - padY - ((value - min) / span) * (height - padY * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  };
+  const points = data.map((item, index) => point(item.value, index)).join(" ");
+  const area = `${padX},${height - padY} ${points} ${width - padX},${height - padY}`;
+  const first = data[0];
+  const last = data[data.length - 1];
+  const move = ((last.value - first.value) / Math.max(0.01, first.value)) * 100;
+  const gradientId = `stock-fill-${stock.sym.replace(/[^A-Za-z0-9_-]/g, "-")}`;
+
+  return (
+    <div className="stock-chart">
+      <div className="space-between stock-chart-head">
+        <div>
+          <div className="section-kicker">Price chart</div>
+          <strong>
+            {formatMarketDate(first.date)} to {formatMarketDate(last.date)}
+          </strong>
+        </div>
+        <div className={move >= 0 ? "green" : "red"} style={{ fontWeight: 900 }}>
+          {pct(move)}
+        </div>
+      </div>
+      <svg aria-label={`${stock.sym} price chart`} className="svg-chart" preserveAspectRatio="none" role="img" viewBox={`0 0 ${width} ${height}`}>
+        <defs>
+          <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="#55c7f7" stopOpacity="0.26" />
+            <stop offset="100%" stopColor="#55c7f7" stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+        {[0.25, 0.5, 0.75].map((line) => (
+          <line
+            key={line}
+            stroke="#232832"
+            strokeDasharray="4 8"
+            strokeWidth="1"
+            x1={padX}
+            x2={width - padX}
+            y1={padY + line * (height - padY * 2)}
+            y2={padY + line * (height - padY * 2)}
+          />
+        ))}
+        <polygon fill={`url(#${gradientId})`} points={area} />
+        <polyline fill="none" points={points} stroke="#55c7f7" strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" />
+        {[first, last].map((item) => {
+          const index = item === first ? 0 : data.length - 1;
+          const [cx, cy] = point(item.value, index).split(",").map(Number);
+          return <circle cx={cx} cy={cy} fill="#f0c76d" key={`${item.date}-${item.value}`} r={5} />;
+        })}
+      </svg>
+      <div className="space-between muted stock-chart-foot">
+        <span>{fmt(first.value)}</span>
+        <span>{fmt(last.value)}</span>
+      </div>
+    </div>
+  );
+}
+
 function HoldingsBars({ holdings, stocks }: { holdings: GameProgressPayload["holdings"]; stocks: Stock[] }) {
   const items = holdings
     .map((holding) => {
@@ -742,6 +827,13 @@ export function BillionaireApp() {
   const currentMilestone = MILESTONES[milestoneIndex];
   const nextMilestone = MILESTONES[milestoneIndex + 1];
   const selectedWizardStyle = wizard?.style ? STYLES.find((style) => style.id === wizard.style) ?? null : null;
+  const wizardChartData = useMemo(
+    () =>
+      wizard
+        ? getStockChartData(wizard.stock.sym, { gameMode, startYear, journeyStartedAt }, marketNow)
+        : [],
+    [gameMode, journeyStartedAt, marketNow, startYear, wizard]
+  );
   const isLiveMode = gameMode === "live";
   const marketDate = getMarketDate({ gameMode, startYear, journeyStartedAt }, marketNow);
   const marketYear = getMarketYear({ gameMode, startYear, journeyStartedAt }, marketNow);
@@ -2470,6 +2562,10 @@ export function BillionaireApp() {
                 <X size={18} />
               </button>
             </div>
+
+            <section className="card stock-detail-chart">
+              <StockPriceChart data={wizardChartData} stock={stock} />
+            </section>
 
             <div className="step-strip">
               {["Lens", "Metrics", "Question", "BILL", "Trade"].map((label, index) => (

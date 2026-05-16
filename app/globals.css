@@ -834,6 +834,32 @@ button:disabled {
   min-height: 140px;
 }
 
+.stock-detail-chart {
+  margin-top: 18px;
+  padding: 16px;
+  border-color: rgba(85, 199, 247, 0.28);
+}
+
+.stock-chart {
+  display: grid;
+  gap: 10px;
+  min-height: 260px;
+}
+
+.stock-chart-head,
+.stock-chart-foot {
+  gap: 12px;
+}
+
+.stock-chart .svg-chart {
+  height: 210px;
+}
+
+.stock-chart-foot {
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .bar-list,
 .allocation-stack {
   display: grid;
