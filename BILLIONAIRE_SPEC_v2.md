@@ -67,7 +67,8 @@ These rules supersede older language elsewhere in the spec if there is a conflic
 
 ### Market Universe
 - The Market includes a growing list of companies/tickers.
-- Current required tickers include Apple, Amazon, Netflix, Tesla, Google, Nvidia, Cisco, Nike, Disney, Starbucks, Roblox, Spotify, and Duolingo.
+- Current required tickers include Apple, Amazon, Netflix, Tesla, Google, Nvidia, Cisco, Nike, Disney, Starbucks, Roblox, Spotify, Duolingo, Berkshire Hathaway, Coca-Cola, Johnson & Johnson, Procter & Gamble, Walmart, JPMorgan Chase, Exxon Mobil, Chevron, Pfizer, Verizon, and AT&T.
+- The market universe should include enough value-oriented companies for the Value Investing path: lower P/E businesses, dividend payers, defensive sectors, financials, energy, healthcare, and consumer staples.
 - Cisco (`CSCO`) is explicitly required.
 - Users can add custom tickers from the UI.
 - Custom tickers should appear in the Market list and be usable in portfolio calculations.
@@ -545,7 +546,7 @@ For Time Machine mode, stock data is pre-loaded in the app:
 - Weekends and holidays are skipped using real historical trading dates
 - Mode/date-aware prices are used for stock cards, trades, portfolio, BILL context, and leaderboard
 - Historical price source is seeded data, not runtime API calls
-- Current supported tickers include AAPL, AMZN, NFLX, TSLA, GOOGL, NVDA, CSCO, NKE, DIS, SBUX, RBLX, SPOT, DUOL
+- Current supported tickers include AAPL, AMZN, NFLX, TSLA, GOOGL, NVDA, CSCO, NKE, DIS, SBUX, RBLX, SPOT, DUOL, BRK-B, KO, JNJ, PG, WMT, JPM, XOM, CVX, PFE, VZ, T
 - Custom tickers use user-entered price data until historical data exists
 
 Future expansion:
