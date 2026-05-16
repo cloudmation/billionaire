@@ -460,7 +460,7 @@ button:disabled {
 
 .shell {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) 320px;
+  grid-template-columns: 220px minmax(0, 1fr) var(--bill-panel-width, 460px);
   height: calc(100vh - 64px);
   min-height: 0;
 }
@@ -1177,6 +1177,24 @@ button:disabled {
   color: var(--text);
 }
 
+.bill-width-control {
+  display: grid;
+  grid-template-columns: auto minmax(120px, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bill-width-control input {
+  accent-color: var(--cyan);
+  cursor: pointer;
+}
+
 .chat-scroll {
   flex: 1;
   overflow: auto;
@@ -1195,12 +1213,12 @@ button:disabled {
 }
 
 .message {
-  max-width: 86%;
+  max-width: min(94%, 560px);
   padding: 10px 12px;
   border-radius: 14px;
   color: var(--text);
-  font-size: 12px;
-  line-height: 1.55;
+  font-size: 13px;
+  line-height: 1.62;
 }
 
 .message.assistant {
@@ -1211,6 +1229,7 @@ button:disabled {
 }
 
 .message.user {
+  max-width: min(86%, 480px);
   background: linear-gradient(135deg, var(--pink), var(--cyan));
   color: #050506;
   font-weight: 800;
@@ -1283,7 +1302,7 @@ select.input {
 
 @media (min-width: 1181px) {
   .modal-backdrop {
-    padding-right: 344px;
+    padding-right: calc(var(--bill-panel-width, 460px) + 24px);
   }
 }
 
@@ -1736,7 +1755,7 @@ select.input {
     right: 14px;
     bottom: 14px;
     z-index: 130;
-    width: min(420px, calc(100vw - 28px));
+    width: min(500px, calc(100vw - 28px));
     height: auto;
     border: 1px solid var(--line);
     border-radius: 18px;
@@ -1755,6 +1774,10 @@ select.input {
 
   .bill-close {
     display: grid;
+  }
+
+  .bill-width-control {
+    display: none;
   }
 
   .bill-fab {

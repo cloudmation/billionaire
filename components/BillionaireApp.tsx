@@ -54,6 +54,7 @@ import {
   STYLES
 } from "@/lib/game-data";
 import { getActiveCheckInStreak, getDailyCheckInReward, getLocalDateKey, getNextCheckInStreak, useGameStore } from "@/lib/store";
+import type { CSSProperties } from "react";
 import type {
   BillMessage,
   EraYear,
@@ -104,6 +105,10 @@ const navItems: Array<{ id: TabId; label: string; icon: typeof Home }> = [
 
 const sectorColors = ["#d7a531", "#27c77b", "#55c7f7", "#a78bfa", "#fb8a3c", "#f05d5e"];
 const SIDE_QUEST_DAILY_LIMIT = 3;
+const DEFAULT_BILL_PANEL_WIDTH = 460;
+const MIN_BILL_PANEL_WIDTH = 360;
+const MAX_BILL_PANEL_WIDTH = 620;
+const BILL_PANEL_WIDTH_STORAGE_KEY = "billionaire-bill-panel-width-v2";
 
 type SideQuestDefinition = {
   id: string;
@@ -800,12 +805,27 @@ export function BillionaireApp() {
   const [billInput, setBillInput] = useState("");
   const [billLoading, setBillLoading] = useState(false);
   const [billQuiz, setBillQuiz] = useState<ActiveQuiz | null>(null);
+  const [billPanelWidth, setBillPanelWidth] = useState(DEFAULT_BILL_PANEL_WIDTH);
   const [wizardQuizLoading, setWizardQuizLoading] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [displayNetWorth, setDisplayNetWorth] = useState(0);
   const [marketNow, setMarketNow] = useState(() => new Date());
   const loadedServer = useRef<string | null>(null);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const storedWidth = Number(window.localStorage.getItem(BILL_PANEL_WIDTH_STORAGE_KEY));
+      if (Number.isFinite(storedWidth)) {
+        setBillPanelWidth(Math.min(MAX_BILL_PANEL_WIDTH, Math.max(MIN_BILL_PANEL_WIDTH, storedWidth)));
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(BILL_PANEL_WIDTH_STORAGE_KEY, String(billPanelWidth));
+  }, [billPanelWidth]);
 
   const todayKey = getLocalDateKey(marketNow);
   const allStocks = useMemo(() => {
@@ -1397,7 +1417,7 @@ export function BillionaireApp() {
   }
 
   return (
-    <div className="app">
+    <div className="app" style={{ "--bill-panel-width": `${billPanelWidth}px` } as CSSProperties}>
       <header className="topbar">
         <div className="brand">
           <div className="brand-mark">B</div>
@@ -1573,6 +1593,19 @@ export function BillionaireApp() {
               </button>
             ))}
           </div>
+          <label className="bill-width-control">
+            <span>Chat width</span>
+            <input
+              aria-label="Adjust BILL chat width"
+              max={MAX_BILL_PANEL_WIDTH}
+              min={MIN_BILL_PANEL_WIDTH}
+              onChange={(event) => setBillPanelWidth(Number(event.currentTarget.value))}
+              onInput={(event) => setBillPanelWidth(Number(event.currentTarget.value))}
+              step={20}
+              type="range"
+              value={billPanelWidth}
+            />
+          </label>
         </div>
 
         <div className="chat-scroll" ref={chatScrollRef}>
