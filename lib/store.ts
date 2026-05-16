@@ -10,6 +10,7 @@ import type {
   Holding,
   InvestmentStyleId,
   QuizResult,
+  SideQuestResult,
   Stock,
   Trade
 } from "./types";
@@ -36,11 +37,11 @@ type GameState = GameProgressPayload & {
     style: InvestmentStyleId | "quick";
   }) => void;
   completeMission: (id: string) => void;
-  claimMissionReward: (id: string, reward: number) => boolean;
   resetTodayProgress: () => void;
   markStudied: (style: InvestmentStyleId) => void;
   rewardCorrectQuizAnswer: () => number;
   recordQuiz: (result: Omit<QuizResult, "id" | "createdAt">) => void;
+  recordSideQuest: (result: Omit<SideQuestResult, "id" | "createdAt">) => void;
   snapshot: () => GameProgressPayload;
 };
 
@@ -111,7 +112,8 @@ const initialState: GameProgressPayload = {
   completedMissions: [],
   studiedStyles: ["value"],
   trades: [],
-  quizHistory: []
+  quizHistory: [],
+  sideQuestHistory: []
 };
 
 export const useGameStore = create<GameState>()(
@@ -137,7 +139,8 @@ export const useGameStore = create<GameState>()(
           completedMissions: progress.completedMissions ?? state.completedMissions,
           studiedStyles: progress.studiedStyles ?? state.studiedStyles,
           trades: progress.trades ?? state.trades,
-          quizHistory: progress.quizHistory ?? state.quizHistory
+          quizHistory: progress.quizHistory ?? state.quizHistory,
+          sideQuestHistory: progress.sideQuestHistory ?? state.sideQuestHistory
         })),
       setUserName: (userName) =>
         set({
@@ -163,7 +166,8 @@ export const useGameStore = create<GameState>()(
           completedMissions: [],
           studiedStyles: ["value"],
           trades: [],
-          quizHistory: []
+          quizHistory: [],
+          sideQuestHistory: []
         }),
       addCustomStock: (stock) =>
         set((state) => ({
@@ -248,22 +252,14 @@ export const useGameStore = create<GameState>()(
         set((state) => ({
           completedMissions: Array.from(new Set([...state.completedMissions, id]))
         })),
-      claimMissionReward: (id, reward) => {
-        const state = get();
-        if (state.completedMissions.includes(id)) return false;
-        set({
-          cash: state.cash + reward,
-          completedMissions: [...state.completedMissions, id]
-        });
-        return true;
-      },
       resetTodayProgress: () =>
         set((state) => {
           const today = getLocalDateKey();
           return {
             completedMissions: [],
             trades: state.trades.filter((trade) => getLocalDateKey(new Date(trade.createdAt)) !== today),
-            quizHistory: state.quizHistory.filter((quiz) => getLocalDateKey(new Date(quiz.createdAt)) !== today)
+            quizHistory: state.quizHistory.filter((quiz) => getLocalDateKey(new Date(quiz.createdAt)) !== today),
+            sideQuestHistory: state.sideQuestHistory.filter((quest) => getLocalDateKey(new Date(quest.createdAt)) !== today)
           };
         }),
       markStudied: (style) =>
@@ -285,6 +281,18 @@ export const useGameStore = create<GameState>()(
             ...state.quizHistory
           ].slice(0, 12)
         })),
+      recordSideQuest: (result) =>
+        set((state) => ({
+          cash: state.cash + result.reward,
+          sideQuestHistory: [
+            {
+              ...result,
+              id: `side-quest-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+              createdAt: new Date().toISOString()
+            },
+            ...state.sideQuestHistory
+          ].slice(0, 60)
+        })),
       snapshot: () => {
         const state = get();
         return {
@@ -302,7 +310,8 @@ export const useGameStore = create<GameState>()(
           completedMissions: state.completedMissions,
           studiedStyles: state.studiedStyles,
           trades: state.trades,
-          quizHistory: state.quizHistory
+          quizHistory: state.quizHistory,
+          sideQuestHistory: state.sideQuestHistory
         };
       }
     }),
@@ -323,7 +332,8 @@ export const useGameStore = create<GameState>()(
         completedMissions: state.completedMissions,
         studiedStyles: state.studiedStyles,
         trades: state.trades,
-        quizHistory: state.quizHistory
+        quizHistory: state.quizHistory,
+        sideQuestHistory: state.sideQuestHistory
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHydrated();

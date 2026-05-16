@@ -97,6 +97,15 @@ export type QuizResult = {
   createdAt: string;
 };
 
+export type SideQuestResult = {
+  id: string;
+  questId: string;
+  stockSym: string;
+  answer: string;
+  reward: number;
+  createdAt: string;
+};
+
 export type BillMessage = {
   role: ChatRole;
   content: string;
@@ -118,6 +127,7 @@ export type GameProgressPayload = {
   studiedStyles: InvestmentStyleId[];
   trades: Trade[];
   quizHistory: QuizResult[];
+  sideQuestHistory: SideQuestResult[];
 };
 
 export type LeaderboardEntry = {

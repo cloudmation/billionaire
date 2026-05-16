@@ -101,8 +101,59 @@ const navItems: Array<{ id: TabId; label: string; icon: typeof Home }> = [
 ];
 
 const sectorColors = ["#d7a531", "#27c77b", "#55c7f7", "#a78bfa", "#fb8a3c", "#f05d5e"];
-const SIDE_QUEST_ID = "side-quest-value-moat";
-const SIDE_QUEST_REWARD = 5000;
+const SIDE_QUEST_DAILY_LIMIT = 3;
+
+type SideQuestDefinition = {
+  id: string;
+  title: string;
+  prompt: string;
+  reward: number;
+  placeholder: string;
+  isMatch: (stock: Stock) => boolean;
+};
+
+const SIDE_QUESTS: SideQuestDefinition[] = [
+  {
+    id: "value-moat",
+    title: "Value Moat Hunt",
+    prompt: "Find a stock with a P/E under 25 and explain whether the moat is strong enough.",
+    reward: 5000,
+    placeholder: "Explain why the business can protect profits from competitors.",
+    isMatch: (stock) => stock.pe !== null && stock.pe < 25
+  },
+  {
+    id: "dividend-safety",
+    title: "Dividend Safety Check",
+    prompt: "Find a stock with a dividend yield above 1.5% and explain one risk to that dividend.",
+    reward: 4000,
+    placeholder: "Explain what could make the dividend safer or riskier.",
+    isMatch: (stock) => stock.yield > 1.5
+  },
+  {
+    id: "growth-quality",
+    title: "Growth Quality Scan",
+    prompt: "Find a stock growing revenue at least 15% and explain what could keep that growth going.",
+    reward: 4500,
+    placeholder: "Explain whether the growth looks durable or fragile.",
+    isMatch: (stock) => stock.growth >= 15
+  },
+  {
+    id: "risk-radar",
+    title: "Risk Radar",
+    prompt: "Find a stock with beta above 1.5 and explain why the risk might be worth it or not.",
+    reward: 3500,
+    placeholder: "Explain the risk in plain language and what you would watch.",
+    isMatch: (stock) => stock.beta > 1.5
+  },
+  {
+    id: "technical-pullback",
+    title: "Chart Patience",
+    prompt: "Find a stock with RSI under 50 and explain what signal you would wait for before buying.",
+    reward: 3500,
+    placeholder: "Explain what would make the chart setup look healthier.",
+    isMatch: (stock) => stock.rsi < 50
+  }
+];
 
 function StyleIcon({ style, size = 18 }: { style: InvestmentStyle; size?: number }) {
   const common = { size, strokeWidth: 2.4 };
@@ -608,6 +659,7 @@ export function BillionaireApp() {
   const studiedStyles = useGameStore((state) => state.studiedStyles);
   const trades = useGameStore((state) => state.trades);
   const quizHistory = useGameStore((state) => state.quizHistory);
+  const sideQuestHistory = useGameStore((state) => state.sideQuestHistory);
   const loadProgress = useGameStore((state) => state.loadProgress);
   const buyStock = useGameStore((state) => state.buyStock);
   const sellStock = useGameStore((state) => state.sellStock);
@@ -616,10 +668,10 @@ export function BillionaireApp() {
   const startNewJourney = useGameStore((state) => state.startNewJourney);
   const addCustomStock = useGameStore((state) => state.addCustomStock);
   const claimDailyCheckIn = useGameStore((state) => state.claimDailyCheckIn);
-  const claimMissionReward = useGameStore((state) => state.claimMissionReward);
   const markStudied = useGameStore((state) => state.markStudied);
   const rewardCorrectQuizAnswer = useGameStore((state) => state.rewardCorrectQuizAnswer);
   const recordQuiz = useGameStore((state) => state.recordQuiz);
+  const recordSideQuest = useGameStore((state) => state.recordSideQuest);
   const resetTodayProgress = useGameStore((state) => state.resetTodayProgress);
   const snapshot = useGameStore((state) => state.snapshot);
 
@@ -669,6 +721,7 @@ export function BillionaireApp() {
   const loadedServer = useRef<string | null>(null);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
 
+  const todayKey = getLocalDateKey(marketNow);
   const allStocks = useMemo(() => {
     return getMarketStocks({ gameMode, startYear, journeyStartedAt, customStocks }, marketNow);
   }, [customStocks, gameMode, journeyStartedAt, marketNow, startYear]);
@@ -787,6 +840,7 @@ export function BillionaireApp() {
     studiedStyles,
     trades,
     quizHistory,
+    sideQuestHistory,
     userName,
     gameMode,
     startYear,
@@ -813,7 +867,7 @@ export function BillionaireApp() {
     return () => {
       active = false;
     };
-  }, [hasOnboarded, hydrated, tab, cash, holdings, completedMissions, quizHistory, checkInStreak, customStocks, gameMode, journeyStartedAt, startYear]);
+  }, [hasOnboarded, hydrated, tab, cash, holdings, completedMissions, quizHistory, sideQuestHistory, checkInStreak, customStocks, gameMode, journeyStartedAt, startYear]);
 
   const sectors = useMemo(() => ["All", ...Array.from(new Set(allStocks.map((stock) => stock.sector)))], [allStocks]);
   const filteredStocks = useMemo(
@@ -827,15 +881,12 @@ export function BillionaireApp() {
       }),
     [allStocks, sector, search]
   );
-  const sideQuestCandidates = useMemo(
-    () =>
-      allStocks
-        .filter((stock) => stock.pe !== null && stock.pe < 25)
-        .sort((left, right) => (left.pe ?? 999) - (right.pe ?? 999)),
-    [allStocks]
+  const todaysSideQuests = useMemo(
+    () => sideQuestHistory.filter((quest) => getLocalDateKey(new Date(quest.createdAt)) === todayKey),
+    [sideQuestHistory, todayKey]
   );
-  const selectedSideQuestStock =
-    sideQuestCandidates.find((stock) => stock.sym === sideQuestStock) ?? sideQuestCandidates[0] ?? null;
+  const sideQuestLimitReached = todaysSideQuests.length >= SIDE_QUEST_DAILY_LIMIT;
+  const activeSideQuest = sideQuestLimitReached ? null : SIDE_QUESTS[todaysSideQuests.length % SIDE_QUESTS.length];
 
   const allocation = useMemo(() => {
     const bySector = new Map<string, number>();
@@ -1136,21 +1187,35 @@ export function BillionaireApp() {
   }
 
   async function submitSideQuest() {
-    const stock = selectedSideQuestStock;
+    const quest = activeSideQuest;
+    const stockSymbol = sideQuestStock.trim().toUpperCase().replace(/[^A-Z0-9.-]/g, "");
+    const stock = findStock(stockSymbol);
     const answer = sideQuestAnswer.trim();
+    if (!quest) {
+      setSideQuestError("You hit today's side quest limit. Come back tomorrow for more.");
+      return;
+    }
+    if (!stockSymbol) {
+      setSideQuestError("Enter the ticker symbol you found in the Market.");
+      return;
+    }
     if (!stock) {
-      setSideQuestError("Pick a stock with a P/E under 25 first.");
+      setSideQuestError("I cannot find that ticker in the Market yet.");
+      return;
+    }
+    if (!quest.isMatch(stock)) {
+      setSideQuestError("That ticker does not match this quest. Check the Market metrics and try another symbol.");
       return;
     }
     if (answer.length < 20) {
-      setSideQuestError("Write at least one full sentence explaining the moat.");
+      setSideQuestError("Write at least one full sentence explaining your reasoning.");
       return;
     }
 
     setSideQuestError("");
     setSideQuestLoading(true);
     setBillPanelOpen(true);
-    const prompt = `Review my side quest answer in simple kid-friendly language. Side quest: find a value stock with P/E under 25 and explain whether the moat is strong enough. Stock: ${stock.sym} (${stock.name}), P/E ${stock.pe}, moat: ${stock.moat}. My answer: ${answer}. Give me brief feedback and one next question.`;
+    const prompt = `Review my side quest answer in simple kid-friendly language. Side quest: ${quest.prompt} Stock I found: ${stock.sym} (${stock.name}). Metrics: P/E ${stock.pe ?? "N/A"}, yield ${stock.yield}%, growth ${stock.growth}%, beta ${stock.beta}, RSI ${stock.rsi}, moat: ${stock.moat}. My answer: ${answer}. Give me brief feedback and one next question.`;
     const outgoing = [...messages, { role: "user" as const, content: prompt }];
     setMessages(outgoing);
     try {
@@ -1167,18 +1232,22 @@ export function BillionaireApp() {
         })
       });
       const data = (await response.json()) as { text?: string };
-      const rewardClaimed = claimMissionReward(SIDE_QUEST_ID, SIDE_QUEST_REWARD);
+      recordSideQuest({
+        questId: quest.id,
+        stockSym: stock.sym,
+        answer,
+        reward: quest.reward
+      });
       setMessages([
         ...outgoing,
         {
           role: "assistant",
-          content: `${data.text ?? "Nice work explaining the moat. Keep asking whether the business can protect profits over time."}${
-            rewardClaimed ? `\n\nSide quest complete: +${fmt(SIDE_QUEST_REWARD)} cash.` : "\n\nSide quest already completed today."
-          }`
+          content: `${data.text ?? "Nice work. Keep asking whether the business can protect profits over time."}\n\nSide quest complete: +${fmt(quest.reward)} cash.`
         }
       ]);
       setSideQuestOpen(false);
       setSideQuestAnswer("");
+      setSideQuestStock("");
     } catch {
       setSideQuestError("BILL could not review it yet. Try again in a moment.");
     } finally {
@@ -2061,7 +2130,7 @@ export function BillionaireApp() {
               style={{ minHeight: 50 }}
               type="button"
             >
-              Try it in the arena
+              Try it in the Market
               <ArrowRight size={17} />
             </button>
             <button className="plain-button" onClick={() => sendBill(`Quiz me on ${style.label} Investing concepts`)} style={{ minHeight: 50 }} type="button">
@@ -2075,7 +2144,7 @@ export function BillionaireApp() {
 
     return (
       <div className="fade-in stack">
-        <SectionHeader title="Skill Tree" subtitle="Level up your investing lenses, then use them in the stock arena." />
+        <SectionHeader title="Learning Paths" subtitle="Level up your investing lenses, then use them in the Market." />
         <div className="grid-2">
           {STYLES.map((style) => {
             const unlocked = netWorth >= style.unlockedAt || style.id === "value" || style.id === "growth";
@@ -2131,27 +2200,26 @@ export function BillionaireApp() {
               <div className="section-kicker" style={{ color: "var(--green)" }}>
                 BILL's side quest
               </div>
-              <p style={{ margin: "5px 0 0", fontWeight: 800 }}>
-                Find a value stock with a P/E under 25 and explain whether the moat is strong enough.
-              </p>
+              <p style={{ margin: "5px 0 0", fontWeight: 800 }}>{activeSideQuest?.prompt ?? "Daily side quest limit reached. Come back tomorrow for more."}</p>
               <p className="muted" style={{ margin: "4px 0 0", fontSize: 13 }}>
-                Reward: +{fmt(SIDE_QUEST_REWARD)} cash and better value-analysis practice.
+                {todaysSideQuests.length}/{SIDE_QUEST_DAILY_LIMIT} completed today
+                {activeSideQuest ? ` · Reward: +${fmt(activeSideQuest.reward)} cash` : ""}
               </p>
             </div>
             <button
-              className={completedMissions.includes(SIDE_QUEST_ID) ? "plain-button" : "success-button"}
+              className={sideQuestLimitReached ? "plain-button" : "success-button"}
+              disabled={sideQuestLimitReached}
               onClick={() => {
                 setSideQuestOpen((open) => !open);
                 setSideQuestError("");
-                if (!sideQuestStock && selectedSideQuestStock) setSideQuestStock(selectedSideQuestStock.sym);
               }}
               type="button"
             >
-              {completedMissions.includes(SIDE_QUEST_ID) ? "Review" : sideQuestOpen ? "Hide" : "Answer"}
+              {sideQuestLimitReached ? "Done today" : sideQuestOpen ? "Hide" : "Answer"}
               {sideQuestOpen ? <ChevronLeft size={16} /> : <ArrowRight size={16} />}
             </button>
           </div>
-          {sideQuestOpen ? (
+          {sideQuestOpen && activeSideQuest ? (
             <form
               className="stack"
               onSubmit={(event) => {
@@ -2161,35 +2229,33 @@ export function BillionaireApp() {
               style={{ marginTop: 18 }}
             >
               <label className="form-label">
-                Value stock
-                <select
+                Ticker you found
+                <input
                   className="input"
-                  onChange={(event) => setSideQuestStock(event.target.value)}
-                  value={selectedSideQuestStock?.sym ?? ""}
-                >
-                  {sideQuestCandidates.map((stock) => (
-                    <option key={stock.sym} value={stock.sym}>
-                      {stock.sym} · {stock.name} · P/E {stock.pe}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(event) => {
+                    setSideQuestError("");
+                    setSideQuestStock(event.target.value.toUpperCase());
+                  }}
+                  placeholder="Find it in the Market, then enter the ticker"
+                  value={sideQuestStock}
+                />
               </label>
               <label className="form-label">
-                Explain the moat
+                Explain your thinking
                 <textarea
                   className="input"
                   onChange={(event) => {
                     setSideQuestError("");
                     setSideQuestAnswer(event.target.value);
                   }}
-                  placeholder="Example: Google has a strong moat because people keep using search and YouTube, which helps the business protect ad profits."
+                  placeholder={activeSideQuest.placeholder}
                   rows={4}
                   style={{ minHeight: 116, resize: "vertical" }}
                   value={sideQuestAnswer}
                 />
               </label>
               {sideQuestError ? <div className="form-error">{sideQuestError}</div> : null}
-              <button className="primary-button" disabled={sideQuestLoading || !selectedSideQuestStock} type="submit">
+              <button className="primary-button" disabled={sideQuestLoading || !sideQuestStock.trim()} type="submit">
                 {sideQuestLoading ? "BILL is checking..." : "Submit answer"}
                 <Send size={16} />
               </button>
