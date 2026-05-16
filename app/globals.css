@@ -1555,6 +1555,37 @@ select.input {
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
 }
 
+.wizard-page {
+  width: 100%;
+  max-width: 1180px;
+}
+
+.wizard.workspace {
+  width: 100%;
+  max-height: none;
+  overflow: visible;
+  background: rgba(8, 9, 11, 0.96);
+}
+
+.wizard-sticky-head {
+  position: sticky;
+  top: -18px;
+  z-index: 8;
+  margin: -26px -26px 18px;
+  padding: 18px 26px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  background: rgba(8, 9, 11, 0.96);
+  backdrop-filter: blur(16px);
+}
+
+.wizard-summary {
+  gap: 14px;
+}
+
+.wizard-stock-title {
+  font-size: 32px;
+}
+
 .mode-dialog {
   width: min(860px, 100%);
   max-height: min(92vh, 900px);
@@ -1684,7 +1715,7 @@ select.input {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
-  margin: 22px 0;
+  margin: 14px 0 0;
 }
 
 .step-marker {

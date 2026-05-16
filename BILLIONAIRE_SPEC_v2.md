@@ -58,6 +58,7 @@ These rules supersede older language elsewhere in the spec if there is a conflic
 - Portfolio value, trading prices, BILL context, leaderboard net worth, and stock cards must all use the same simulated market date.
 - Portfolio should show market date, next price update, last update time, current per-share price, and daily price move so holdings do not appear frozen.
 - The simulation caps at the latest available historical market date.
+- Stock analysis should use an inline Market workspace rather than a tall modal, with a sticky stock summary/progress header and a clear Back to Market action.
 
 ### Starting Eras
 - Supported Time Machine starting eras:

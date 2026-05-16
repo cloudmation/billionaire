@@ -1394,6 +1394,7 @@ export function BillionaireApp() {
   }
 
   function openWizard(stock: Stock) {
+    setTab("market");
     setWizard({
       stock,
       step: 0,
@@ -1807,7 +1808,7 @@ export function BillionaireApp() {
 
         <main className="main">
           {tab === "home" ? renderHome() : null}
-          {tab === "market" ? renderMarket() : null}
+          {tab === "market" ? (wizard ? renderWizard() : renderMarket()) : null}
           {tab === "learn" ? renderLearn() : null}
           {tab === "portfolio" ? renderPortfolio() : null}
           {tab === "ladder" ? renderLadder() : null}
@@ -1823,7 +1824,6 @@ export function BillionaireApp() {
       </button>
 
       {modePickerOpen ? renderModePicker() : null}
-      {wizard ? renderWizard() : null}
       {addTickerOpen ? renderAddTickerModal() : null}
       {switchUserOpen ? renderSwitchUserModal() : null}
     </div>
@@ -3035,39 +3035,45 @@ export function BillionaireApp() {
     const style = selectedWizardStyle;
     const metrics = style ? styleMetrics(stock, style.id) : [];
     return (
-      <div className="modal-backdrop" role="dialog" aria-modal="true">
-        <section className="wizard">
+      <div className="fade-in wizard-page">
+        <button className="plain-button" onClick={() => setWizard(null)} type="button">
+          <ChevronLeft size={16} />
+          Back to Market
+        </button>
+        <section className="wizard workspace">
           <div className="wizard-inner">
-            <div className="space-between">
-              <div className="row">
-                <div className="ticker-badge" style={{ height: 52, width: 52 }}>
-                  {stock.mascot}
-                </div>
-                <div>
-                  <div className="display" style={{ color: "var(--gold)", fontSize: 34 }}>
-                    {stock.sym} · {stock.name}
+            <div className="wizard-sticky-head">
+              <div className="space-between wizard-summary">
+                <div className="row">
+                  <div className="ticker-badge" style={{ height: 52, width: 52 }}>
+                    {stock.mascot}
                   </div>
-                  <div className="muted" style={{ fontSize: 13 }}>
-                    {fmt(stock.price)} · {stock.sector} · Analysis Wizard
+                  <div>
+                    <div className="display wizard-stock-title" style={{ color: "var(--gold)" }}>
+                      {stock.sym} · {stock.name}
+                    </div>
+                    <div className="muted" style={{ fontSize: 13 }}>
+                      {fmt(stock.price)} · {pct(stock.change)} · {stock.sector} · Analysis Wizard
+                    </div>
                   </div>
                 </div>
+                <button aria-label="Close wizard" className="icon-button" onClick={() => setWizard(null)} type="button">
+                  <X size={18} />
+                </button>
               </div>
-              <button aria-label="Close wizard" className="icon-button" onClick={() => setWizard(null)} type="button">
-                <X size={18} />
-              </button>
+
+              <div className="step-strip">
+                {["Lens", "Metrics", "Question", "BILL", "Trade"].map((label, index) => (
+                  <div className={clsx("step-marker", wizard.step === index && "active", wizard.step > index && "done")} key={label}>
+                    {label}
+                  </div>
+                ))}
+              </div>
             </div>
 
             <section className="card stock-detail-chart">
               <StockPriceChart data={wizardChartData} stock={stock} />
             </section>
-
-            <div className="step-strip">
-              {["Lens", "Metrics", "Question", "BILL", "Trade"].map((label, index) => (
-                <div className={clsx("step-marker", wizard.step === index && "active", wizard.step > index && "done")} key={label}>
-                  {label}
-                </div>
-              ))}
-            </div>
 
             {wizard.step === 0 ? (
               <div className="stack">
