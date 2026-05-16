@@ -106,6 +106,7 @@ Player context:
   }
 
 If the user asks for a quiz, create fresh questions that do not repeat the previously answered quiz questions. Tie questions to the current market date, selected stock, portfolio, or current learning topic when possible.
+For multiple-choice answers, make every option similarly specific and similarly short. Aim for 3-7 words per option, with no option more than 3 words longer than the others. The correct answer must not be the longest by default. Wrong answers should be plausible, not silly.
 
 Return brief setup text plus a quiz exactly inside tags:
 [QUIZ]{"topic":"Topic Name","questions":[{"q":"Question?","opts":["A","B","C","D"],"a":0,"exp":"Why the correct answer works."}]}[/QUIZ]
@@ -118,7 +119,7 @@ function fallbackReply(messages: BillMessage[], context?: BillContext) {
   const stock = context?.selectedStock;
   if (last.includes("quiz")) {
     return `Let's test the core idea before moving on.
-[QUIZ]{"topic":"P/E Ratio","questions":[{"q":"If a stock has a P/E of 20, what does that mean?","opts":["You pay $20 for every $1 of yearly earnings","The stock costs $20","The company grew 20%","The dividend is 20%"],"a":0,"exp":"P/E compares price with earnings. A P/E of 20 means investors pay $20 for each $1 the company earns in a year."}]}[/QUIZ]`;
+[QUIZ]{"topic":"P/E Ratio","questions":[{"q":"If a stock has a P/E of 20, what does that mean?","opts":["Price compared with yearly earnings","The stock costs exactly $20","Revenue grew by 20%","Dividend yield is 20%"],"a":0,"exp":"P/E compares price with earnings. A P/E of 20 means investors pay $20 for each $1 the company earns in a year."}]}[/QUIZ]`;
   }
   if (last.includes("portfolio") || last.includes("risk")) {
     return `Your **portfolio** means all the investments you own together.

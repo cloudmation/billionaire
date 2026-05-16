@@ -1260,10 +1260,10 @@ export const QUIZ_POOL: Record<InvestmentStyleId, Quiz> = {
       {
         q: "Apple has a P/E of 28 while the tech average is 24. What does that suggest?",
         opts: [
-          "Apple is cheaper than peers",
-          "Apple is more expensive than peers",
-          "Apple is exactly average",
-          "P/E does not apply"
+          "Apple trades below peers",
+          "Apple trades above peers",
+          "Apple matches peer pricing",
+          "P/E gives no clue"
         ],
         a: 1,
         exp: "A higher P/E means investors pay more per dollar of earnings."
@@ -1272,8 +1272,8 @@ export const QUIZ_POOL: Record<InvestmentStyleId, Quiz> = {
         q: "What does margin of safety mean?",
         opts: [
           "Only buy famous brands",
-          "Buy below your estimate of value",
-          "Never sell a stock",
+          "Buy below estimated value",
+          "Never sell any stock",
           "Avoid every risky sector"
         ],
         a: 1,
@@ -1310,10 +1310,10 @@ export const QUIZ_POOL: Record<InvestmentStyleId, Quiz> = {
       {
         q: "Why does volume matter?",
         opts: [
-          "It shows the stock's dividend",
-          "It confirms how many traders support the move",
+          "It shows trader interest",
+          "It confirms move support",
           "It replaces earnings",
-          "It sets the stock price"
+          "It sets price alone"
         ],
         a: 1,
         exp: "A move with high volume has more participation behind it."
@@ -1326,10 +1326,10 @@ export const QUIZ_POOL: Record<InvestmentStyleId, Quiz> = {
       {
         q: "Dividend yield tells you:",
         opts: [
-          "How much a company pays relative to its price",
+          "Cash paid versus price",
           "How fast revenue grows",
-          "Whether the chart broke out",
-          "The CEO's salary"
+          "Whether price broke out",
+          "How much CEOs earn"
         ],
         a: 0,
         exp: "Yield is annual dividend divided by stock price."
@@ -1337,10 +1337,10 @@ export const QUIZ_POOL: Record<InvestmentStyleId, Quiz> = {
       {
         q: "A payout ratio that is too high can be risky because:",
         opts: [
-          "The company may not afford future payments",
-          "The stock cannot grow",
-          "Dividends are illegal",
-          "It means no one buys the stock"
+          "Future payments may strain",
+          "Growth always stops",
+          "Dividends become illegal",
+          "No buyers remain"
         ],
         a: 0,
         exp: "If too much profit is paid out, there may be little room for trouble."
@@ -1359,9 +1359,9 @@ export const QUIZ_POOL: Record<InvestmentStyleId, Quiz> = {
       {
         q: "Why do momentum investors need exit signals?",
         opts: [
-          "To know when the trend weakens",
-          "To avoid reading charts",
-          "To collect dividends",
+          "To spot weakening trends",
+          "To avoid all charts",
+          "To collect dividend cash",
           "To calculate P/E"
         ],
         a: 0,

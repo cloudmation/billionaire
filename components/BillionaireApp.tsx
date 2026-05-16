@@ -244,11 +244,47 @@ function cleanBillText(raw: string) {
   return raw.replace(/\[\/?QUIZ\]/g, "").trim();
 }
 
+function seededQuizOrder(seedText: string, count: number) {
+  let seed = 2166136261;
+  for (let index = 0; index < seedText.length; index += 1) {
+    seed ^= seedText.charCodeAt(index);
+    seed = Math.imul(seed, 16777619);
+  }
+
+  const order = Array.from({ length: count }, (_, index) => index);
+  for (let index = order.length - 1; index > 0; index -= 1) {
+    seed = Math.imul(seed ^ (seed >>> 13), 1274126177);
+    const swapIndex = Math.abs(seed) % (index + 1);
+    [order[index], order[swapIndex]] = [order[swapIndex], order[index]];
+  }
+  return order;
+}
+
+function normalizeQuizQuestion(question: QuizQuestion): QuizQuestion {
+  const rawOptions = Array.isArray(question.opts) ? question.opts : [];
+  const opts = rawOptions.slice(0, 4).map((option) => String(option).trim()).filter(Boolean);
+  if (opts.length < 2 || question.a < 0 || question.a >= opts.length) return question;
+  const order = seededQuizOrder(`${question.q}|${opts.join("|")}`, opts.length);
+  return {
+    ...question,
+    opts: order.map((index) => opts[index]),
+    a: order.indexOf(question.a)
+  };
+}
+
+function normalizeQuiz(quiz: Quiz): Quiz {
+  const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
+  return {
+    ...quiz,
+    questions: questions.map(normalizeQuizQuestion)
+  };
+}
+
 function extractQuiz(raw: string): { text: string; quiz: ActiveQuiz | null } {
   const match = raw.match(/\[QUIZ\]([\s\S]*?)\[\/QUIZ\]/);
   if (!match) return { text: cleanBillText(raw), quiz: null };
   try {
-    const parsed = JSON.parse(match[1]) as Quiz;
+    const parsed = normalizeQuiz(JSON.parse(match[1]) as Quiz);
     return {
       text: cleanBillText(raw.replace(/\[QUIZ\][\s\S]*?\[\/QUIZ\]/, "")),
       quiz: { ...parsed, current: 0, answers: [] }
@@ -1576,20 +1612,21 @@ export function BillionaireApp() {
       (stock
         ? {
             q: `${stock.name} has a P/E of ${stock.pe ?? "N/A"}. What should an investor check before deciding it is cheap?`,
-            opts: ["The moat and future profits", "Only the ticker symbol", "Whether the logo looks cool", "The stock price alone"],
+            opts: ["Moat and future profits", "Ticker symbol only", "A cooler-looking logo", "Stock price alone"],
             a: 0,
             exp: "A low-looking price only matters if the business can protect and grow profits."
           }
         : {
             q: "What makes a stock a stronger long-term investment candidate?",
-            opts: ["A durable business and fair price", "A random rumor", "A funny ticker", "A one-day price jump only"],
+            opts: ["Durable business, fair price", "A random online rumor", "A funny ticker name", "One-day price jump"],
             a: 0,
             exp: "Investors usually want both business quality and a price that makes sense."
           });
+    const normalizedQuestion = normalizeQuizQuestion(fallbackQuestion);
 
     return {
       topic: stock ? `${stock.sym} ${QUIZ_POOL[style].topic}` : QUIZ_POOL[style].topic,
-      questions: [fallbackQuestion],
+      questions: [normalizedQuestion],
       current: 0,
       answers: []
     };
