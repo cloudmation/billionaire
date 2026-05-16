@@ -52,6 +52,7 @@ import {
   portfolioCost,
   QUIZ_POOL,
   QUIZ_CORRECT_REWARD,
+  SIMULATED_MARKET_DAY_MS,
   STYLES
 } from "@/lib/game-data";
 import { getActiveCheckInStreak, getDailyCheckInReward, getLocalDateKey, getNextCheckInStreak, useGameStore } from "@/lib/store";
@@ -175,6 +176,13 @@ function StyleIcon({ style, size = 18 }: { style: InvestmentStyle; size?: number
 
 function progressPayload(snapshot: () => GameProgressPayload) {
   return snapshot();
+}
+
+function formatCountdown(ms: number) {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
 function cleanBillText(raw: string) {
@@ -876,12 +884,13 @@ export function BillionaireApp() {
   const currentMilestone = MILESTONES[milestoneIndex];
   const nextMilestone = MILESTONES[milestoneIndex + 1];
   const selectedWizardStyle = wizard?.style ? STYLES.find((style) => style.id === wizard.style) ?? null : null;
+  const currentWizardStock = wizard ? allStocks.find((stock) => stock.sym === wizard.stock.sym) ?? wizard.stock : null;
   const wizardChartData = useMemo(
     () =>
-      wizard
-        ? getStockChartData(wizard.stock.sym, { gameMode, startYear, journeyStartedAt }, marketNow)
+      currentWizardStock
+        ? getStockChartData(currentWizardStock.sym, { gameMode, startYear, journeyStartedAt }, marketNow)
         : [],
-    [gameMode, journeyStartedAt, marketNow, startYear, wizard]
+    [currentWizardStock, gameMode, journeyStartedAt, marketNow, startYear]
   );
   const isLiveMode = gameMode === "live";
   const marketDate = getMarketDate({ gameMode, startYear, journeyStartedAt }, marketNow);
@@ -892,6 +901,19 @@ export function BillionaireApp() {
   const currentEra = ERAS.find((era) => era.year === startYear) ?? ERAS.find((era) => era.year === DEFAULT_YEAR)!;
   const modeLabel = isLiveMode ? "Live Market" : `Time Machine · ${simulatedMarketLabel}`;
   const marketDateLabel = isLiveMode ? formattedMarketDate : simulatedMarketLabel;
+  const nextPriceUpdateMs = useMemo(() => {
+    if (isLiveMode || !journeyStartedAt) return null;
+    const started = new Date(journeyStartedAt);
+    if (Number.isNaN(started.getTime())) return null;
+    const elapsed = Math.max(0, marketNow.getTime() - started.getTime());
+    const remainder = elapsed % SIMULATED_MARKET_DAY_MS;
+    return remainder === 0 ? SIMULATED_MARKET_DAY_MS : SIMULATED_MARKET_DAY_MS - remainder;
+  }, [isLiveMode, journeyStartedAt, marketNow]);
+  const priceUpdateLabel = isLiveMode
+    ? "Live prices"
+    : nextPriceUpdateMs == null
+      ? "Updates every 5 min"
+      : `Next price update ${formatCountdown(nextPriceUpdateMs)}`;
   const checkedInToday = lastCheckInDate === getLocalDateKey();
   const activeCheckInStreak = getActiveCheckInStreak(lastCheckInDate, checkInStreak);
   const nextCheckInStreak = getNextCheckInStreak(lastCheckInDate, checkInStreak);
@@ -936,7 +958,7 @@ export function BillionaireApp() {
   }, [messages, billLoading, billQuiz]);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setMarketNow(new Date()), 5_000);
+    const timer = window.setInterval(() => setMarketNow(new Date()), 1_000);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -1332,7 +1354,7 @@ export function BillionaireApp() {
           messages: outgoing,
           context: {
             screen: tab,
-            selectedStock: wizard?.stock ?? null,
+            selectedStock: currentWizardStock ?? null,
             progress: progressPayload(snapshot)
           }
         })
@@ -1486,21 +1508,22 @@ export function BillionaireApp() {
 
   function executeTrade() {
     if (!wizard?.action) return;
+    const stock = currentWizardStock ?? wizard.stock;
     if (wizard.action === "skip") {
       setWizard(null);
       return;
     }
     const style = wizard.style ?? "quick";
     if (wizard.action === "buy") {
-      buyStock({ sym: wizard.stock.sym, shares: wizard.shares, price: wizard.stock.price, style });
+      buyStock({ sym: stock.sym, shares: wizard.shares, price: stock.price, style });
     } else {
-      sellStock({ sym: wizard.stock.sym, shares: wizard.shares, price: wizard.stock.price, style });
+      sellStock({ sym: stock.sym, shares: wizard.shares, price: stock.price, style });
     }
     updateWizard({
       confirmed: true,
       quiz: null
     });
-    void requestWizardQuiz(wizard.stock, style === "quick" ? "value" : style);
+    void requestWizardQuiz(stock, style === "quick" ? "value" : style);
   }
 
   function chooseMode(nextMode: GameMode) {
@@ -1540,6 +1563,10 @@ export function BillionaireApp() {
             {isLiveMode ? <Radio size={14} /> : <Sparkles size={14} />}
             {modeLabel}
           </button>
+          <span className="mode-pill price-update-pill">
+            <Clock3 size={14} />
+            {priceUpdateLabel}
+          </span>
           <div className="progress-rail" aria-label="Milestone progress">
             <div className="progress-fill" style={{ width: `${milestoneProgress * 100}%` }} />
           </div>
@@ -2146,7 +2173,7 @@ export function BillionaireApp() {
               <p className="muted" style={{ margin: "7px 0 0", lineHeight: 1.55, fontSize: 13 }}>
                 {isLiveMode
                   ? "Use the same discipline as Time Machine: pick one lens, name the risk, then decide whether the trade deserves capital."
-                  : `${currentEra.title} began in ${startYear}. A new real trading day appears about every 5-6 minutes.`}
+                  : `${currentEra.title} began in ${startYear}. A new historical trading day appears every 5 minutes.`}
               </p>
             </div>
           </section>
@@ -2263,6 +2290,10 @@ export function BillionaireApp() {
             <div className="mode-pill">
               {isLiveMode ? <Radio size={14} /> : <Target size={14} />}
               {isLiveMode ? "Live Market" : "3 trades/day"}
+            </div>
+            <div className="mode-pill price-update-pill">
+              <Clock3 size={14} />
+              {priceUpdateLabel}
             </div>
           </div>
         </div>
@@ -2819,7 +2850,7 @@ export function BillionaireApp() {
 
   function renderWizard() {
     if (!wizard) return null;
-    const stock = wizard.stock;
+    const stock = currentWizardStock ?? wizard.stock;
     const style = selectedWizardStyle;
     const metrics = style ? styleMetrics(stock, style.id) : [];
     return (

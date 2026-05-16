@@ -49,10 +49,11 @@ These rules supersede older language elsewhere in the spec if there is a conflic
 - The simulation starts at the player-selected era.
 - Time is accelerated:
   - 1 real day represents about 1 market year.
-  - 1 simulated trading day unlocks about every 5 minutes 43 seconds.
+  - 1 simulated trading day unlocks every 5 minutes.
   - Weekends and market holidays are skipped by walking through real historical trading dates.
 - The UI should show the simulated market date, not just the year.
 - The UI should also show the simulated trading day count, such as `Sim Day 1 · Jan 3, 2000`, anywhere the Time Machine date is used as the main page/time label.
+- The UI should show a countdown to the next Time Machine price update so players can tell the market is moving.
 - Portfolio value, trading prices, BILL context, leaderboard net worth, and stock cards must all use the same simulated market date.
 - The simulation caps at the latest available historical market date.
 

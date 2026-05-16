@@ -90,7 +90,7 @@ Player context:
 - Player name: ${context?.progress?.userName ?? "Investor"}
 - Player age: ${context?.progress?.playerAge ?? 12}
 - Game mode: ${context?.progress?.gameMode === "live" ? "Live Market" : "Time Machine"}
-- Time Machine pricing: about every 5 minutes 43 seconds unlocks the next historical trading day, using split-adjusted historical stock prices for the shown date.
+- Time Machine pricing: every 5 minutes unlocks the next historical trading day, using split-adjusted historical stock prices for the shown date.
 - Current screen: ${context?.screen ?? "home"}
 - Net worth: ${fmt(netWorth)}
 - Cash: ${fmt(context?.progress?.cash ?? 0)}

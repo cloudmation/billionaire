@@ -492,7 +492,7 @@ export const STOCKS: Stock[] = [
 ];
 
 export const MAX_MARKET_YEAR = 2026;
-export const SIMULATED_MARKET_DAY_MS = Math.round(86_400_000 / 252);
+export const SIMULATED_MARKET_DAY_MS = 5 * 60 * 1000;
 
 type DailyPriceRow = [string, number];
 

@@ -346,6 +346,12 @@ button:disabled {
   appearance: none;
 }
 
+.price-update-pill {
+  border-color: rgba(39, 199, 123, 0.32);
+  background: rgba(39, 199, 123, 0.1);
+  color: var(--green);
+}
+
 .mode-button:hover,
 .text-button:hover {
   border-color: rgba(255, 91, 214, 0.68);
