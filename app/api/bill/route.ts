@@ -45,6 +45,9 @@ function buildInstructions(context?: BillContext) {
   const netWorth = (context?.progress?.cash ?? 0) + portfolioValueFor(context?.progress);
   const marketDate = context?.progress ? getMarketDate(context.progress) : `${DEFAULT_YEAR}-01-01`;
   const marketYear = context?.progress ? getMarketYear(context.progress) : DEFAULT_YEAR;
+  const answeredQuestions = (context?.progress?.quizHistory ?? [])
+    .flatMap((quiz) => quiz.questions ?? [])
+    .slice(0, 30);
   const selected = context?.selectedStock
     ? `${context.selectedStock.sym} (${context.selectedStock.name}), price ${fmt(context.selectedStock.price)}, P/E ${
         context.selectedStock.pe ?? "not profitable"
@@ -89,15 +92,18 @@ Player context:
 - Holdings: ${holdingsLine(context?.progress)}
 - Custom tickers added by player: ${context?.progress?.customStocks?.map((stock) => `${stock.sym} (${stock.name})`).join(", ") || "none"}
 - Selected stock: ${selected}
+- Previously answered quiz questions: ${answeredQuestions.length ? answeredQuestions.map((question) => `"${question}"`).join("; ") : "none"}
 - Recent trades: ${
     context?.progress?.trades?.slice(0, 3).map((trade) => `${trade.action} ${trade.shares} ${trade.sym}`).join(", ") ||
     "none"
   }
 
-If the user asks for a quiz, return brief setup text plus a quiz exactly inside tags:
+If the user asks for a quiz, create fresh questions that do not repeat the previously answered quiz questions. Tie questions to the current market date, selected stock, portfolio, or current learning topic when possible.
+
+Return brief setup text plus a quiz exactly inside tags:
 [QUIZ]{"topic":"Topic Name","questions":[{"q":"Question?","opts":["A","B","C","D"],"a":0,"exp":"Why the correct answer works."}]}[/QUIZ]
 
-Use the exact quiz shape. Do not wrap the JSON in Markdown.`;
+Use the exact quiz shape. Keep each quiz to 1-3 questions. Do not wrap the JSON in Markdown.`;
 }
 
 function fallbackReply(messages: BillMessage[], context?: BillContext) {

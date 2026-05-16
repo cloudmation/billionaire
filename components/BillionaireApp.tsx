@@ -101,6 +101,8 @@ const navItems: Array<{ id: TabId; label: string; icon: typeof Home }> = [
 ];
 
 const sectorColors = ["#d7a531", "#27c77b", "#55c7f7", "#a78bfa", "#fb8a3c", "#f05d5e"];
+const SIDE_QUEST_ID = "side-quest-value-moat";
+const SIDE_QUEST_REWARD = 5000;
 
 function StyleIcon({ style, size = 18 }: { style: InvestmentStyle; size?: number }) {
   const common = { size, strokeWidth: 2.4 };
@@ -614,6 +616,7 @@ export function BillionaireApp() {
   const startNewJourney = useGameStore((state) => state.startNewJourney);
   const addCustomStock = useGameStore((state) => state.addCustomStock);
   const claimDailyCheckIn = useGameStore((state) => state.claimDailyCheckIn);
+  const claimMissionReward = useGameStore((state) => state.claimMissionReward);
   const markStudied = useGameStore((state) => state.markStudied);
   const rewardCorrectQuizAnswer = useGameStore((state) => state.rewardCorrectQuizAnswer);
   const recordQuiz = useGameStore((state) => state.recordQuiz);
@@ -634,6 +637,11 @@ export function BillionaireApp() {
   const [switchUserError, setSwitchUserError] = useState("");
   const [switchingUser, setSwitchingUser] = useState(false);
   const [addTickerError, setAddTickerError] = useState("");
+  const [sideQuestOpen, setSideQuestOpen] = useState(false);
+  const [sideQuestStock, setSideQuestStock] = useState("");
+  const [sideQuestAnswer, setSideQuestAnswer] = useState("");
+  const [sideQuestError, setSideQuestError] = useState("");
+  const [sideQuestLoading, setSideQuestLoading] = useState(false);
   const [customTickerForm, setCustomTickerForm] = useState<CustomTickerForm>({
     sym: "",
     name: "",
@@ -654,6 +662,7 @@ export function BillionaireApp() {
   const [billInput, setBillInput] = useState("");
   const [billLoading, setBillLoading] = useState(false);
   const [billQuiz, setBillQuiz] = useState<ActiveQuiz | null>(null);
+  const [wizardQuizLoading, setWizardQuizLoading] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [displayNetWorth, setDisplayNetWorth] = useState(0);
   const [marketNow, setMarketNow] = useState(() => new Date());
@@ -713,6 +722,10 @@ export function BillionaireApp() {
       .slice(0, 25)
       .map((entry, index) => ({ ...entry, rank: index + 1 }));
   }, [cash, checkInStreak, completedMissions.length, holdings.length, leaderboard, netWorth, quizHistory, stockValue, userName]);
+  const answeredQuestionTexts = useMemo(
+    () => new Set(quizHistory.flatMap((quiz) => quiz.questions ?? [])),
+    [quizHistory]
+  );
 
   useEffect(() => {
     const panel = chatScrollRef.current;
@@ -814,6 +827,15 @@ export function BillionaireApp() {
       }),
     [allStocks, sector, search]
   );
+  const sideQuestCandidates = useMemo(
+    () =>
+      allStocks
+        .filter((stock) => stock.pe !== null && stock.pe < 25)
+        .sort((left, right) => (left.pe ?? 999) - (right.pe ?? 999)),
+    [allStocks]
+  );
+  const selectedSideQuestStock =
+    sideQuestCandidates.find((stock) => stock.sym === sideQuestStock) ?? sideQuestCandidates[0] ?? null;
 
   const allocation = useMemo(() => {
     const bySector = new Map<string, number>();
@@ -1000,7 +1022,13 @@ export function BillionaireApp() {
         const correct = nextQuiz.questions.reduce((sum, question, questionIndex) => {
           return sum + (nextAnswers[questionIndex] === question.a ? 1 : 0);
         }, 0);
-        recordQuiz({ topic: nextQuiz.topic, correct, total: nextQuiz.questions.length, reward: nextQuiz.earned ?? 0 });
+        recordQuiz({
+          topic: nextQuiz.topic,
+          questions: nextQuiz.questions.map((question) => question.q),
+          correct,
+          total: nextQuiz.questions.length,
+          reward: nextQuiz.earned ?? 0
+        });
         setter({ ...nextQuiz, current: nextIndex, complete: true });
       } else {
         setter({ ...nextQuiz, current: nextIndex });
@@ -1054,6 +1082,110 @@ export function BillionaireApp() {
     }
   }
 
+  function localQuizFallback(style: InvestmentStyleId, stock?: Stock | null): ActiveQuiz {
+    const poolQuestions = QUIZ_POOL[style].questions.filter((question) => !answeredQuestionTexts.has(question.q));
+    const baseQuestion = poolQuestions[0];
+    const fallbackQuestion =
+      baseQuestion ??
+      (stock
+        ? {
+            q: `${stock.name} has a P/E of ${stock.pe ?? "N/A"}. What should an investor check before deciding it is cheap?`,
+            opts: ["The moat and future profits", "Only the ticker symbol", "Whether the logo looks cool", "The stock price alone"],
+            a: 0,
+            exp: "A low-looking price only matters if the business can protect and grow profits."
+          }
+        : {
+            q: "What makes a stock a stronger long-term investment candidate?",
+            opts: ["A durable business and fair price", "A random rumor", "A funny ticker", "A one-day price jump only"],
+            a: 0,
+            exp: "Investors usually want both business quality and a price that makes sense."
+          });
+
+    return {
+      topic: stock ? `${stock.sym} ${QUIZ_POOL[style].topic}` : QUIZ_POOL[style].topic,
+      questions: [fallbackQuestion],
+      current: 0,
+      answers: []
+    };
+  }
+
+  async function requestWizardQuiz(stock: Stock, style: InvestmentStyleId) {
+    setWizardQuizLoading(true);
+    try {
+      const prompt = `Create a fresh 2-question micro-quiz for the trade I just made. Topic: ${style} investing. Stock: ${stock.sym} (${stock.name}). Do not repeat any previously answered question.`;
+      const response = await fetch("/api/bill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ role: "user" as const, content: prompt }],
+          context: {
+            screen: tab,
+            selectedStock: stock,
+            progress: progressPayload(snapshot)
+          }
+        })
+      });
+      const data = (await response.json()) as { text?: string };
+      const parsed = extractQuiz(data.text ?? "");
+      updateWizard({ quiz: parsed.quiz ?? localQuizFallback(style, stock) });
+    } catch {
+      updateWizard({ quiz: localQuizFallback(style, stock) });
+    } finally {
+      setWizardQuizLoading(false);
+    }
+  }
+
+  async function submitSideQuest() {
+    const stock = selectedSideQuestStock;
+    const answer = sideQuestAnswer.trim();
+    if (!stock) {
+      setSideQuestError("Pick a stock with a P/E under 25 first.");
+      return;
+    }
+    if (answer.length < 20) {
+      setSideQuestError("Write at least one full sentence explaining the moat.");
+      return;
+    }
+
+    setSideQuestError("");
+    setSideQuestLoading(true);
+    setBillPanelOpen(true);
+    const prompt = `Review my side quest answer in simple kid-friendly language. Side quest: find a value stock with P/E under 25 and explain whether the moat is strong enough. Stock: ${stock.sym} (${stock.name}), P/E ${stock.pe}, moat: ${stock.moat}. My answer: ${answer}. Give me brief feedback and one next question.`;
+    const outgoing = [...messages, { role: "user" as const, content: prompt }];
+    setMessages(outgoing);
+    try {
+      const response = await fetch("/api/bill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: outgoing,
+          context: {
+            screen: tab,
+            selectedStock: stock,
+            progress: progressPayload(snapshot)
+          }
+        })
+      });
+      const data = (await response.json()) as { text?: string };
+      const rewardClaimed = claimMissionReward(SIDE_QUEST_ID, SIDE_QUEST_REWARD);
+      setMessages([
+        ...outgoing,
+        {
+          role: "assistant",
+          content: `${data.text ?? "Nice work explaining the moat. Keep asking whether the business can protect profits over time."}${
+            rewardClaimed ? `\n\nSide quest complete: +${fmt(SIDE_QUEST_REWARD)} cash.` : "\n\nSide quest already completed today."
+          }`
+        }
+      ]);
+      setSideQuestOpen(false);
+      setSideQuestAnswer("");
+    } catch {
+      setSideQuestError("BILL could not review it yet. Try again in a moment.");
+    } finally {
+      setSideQuestLoading(false);
+    }
+  }
+
   function executeTrade() {
     if (!wizard?.action) return;
     if (wizard.action === "skip") {
@@ -1068,8 +1200,9 @@ export function BillionaireApp() {
     }
     updateWizard({
       confirmed: true,
-      quiz: { ...QUIZ_POOL[wizard.style ?? "value"], current: 0, answers: [] }
+      quiz: null
     });
+    void requestWizardQuiz(wizard.stock, style === "quick" ? "value" : style);
   }
 
   function chooseMode(nextMode: GameMode) {
@@ -1990,7 +2123,7 @@ export function BillionaireApp() {
         </div>
 
         <section className="card" style={{ borderColor: "rgba(39,199,123,0.32)" }}>
-          <div className="row">
+          <div className="row" style={{ alignItems: "flex-start" }}>
             <div className="bill-avatar">
               <Bot size={22} />
             </div>
@@ -2002,14 +2135,66 @@ export function BillionaireApp() {
                 Find a value stock with a P/E under 25 and explain whether the moat is strong enough.
               </p>
               <p className="muted" style={{ margin: "4px 0 0", fontSize: 13 }}>
-                Reward: +$5,000 demo bonus and better value-analysis XP.
+                Reward: +{fmt(SIDE_QUEST_REWARD)} cash and better value-analysis practice.
               </p>
             </div>
-            <button className="success-button" onClick={() => setTab("market")} type="button">
-              Start
-              <ArrowRight size={16} />
+            <button
+              className={completedMissions.includes(SIDE_QUEST_ID) ? "plain-button" : "success-button"}
+              onClick={() => {
+                setSideQuestOpen((open) => !open);
+                setSideQuestError("");
+                if (!sideQuestStock && selectedSideQuestStock) setSideQuestStock(selectedSideQuestStock.sym);
+              }}
+              type="button"
+            >
+              {completedMissions.includes(SIDE_QUEST_ID) ? "Review" : sideQuestOpen ? "Hide" : "Answer"}
+              {sideQuestOpen ? <ChevronLeft size={16} /> : <ArrowRight size={16} />}
             </button>
           </div>
+          {sideQuestOpen ? (
+            <form
+              className="stack"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void submitSideQuest();
+              }}
+              style={{ marginTop: 18 }}
+            >
+              <label className="form-label">
+                Value stock
+                <select
+                  className="input"
+                  onChange={(event) => setSideQuestStock(event.target.value)}
+                  value={selectedSideQuestStock?.sym ?? ""}
+                >
+                  {sideQuestCandidates.map((stock) => (
+                    <option key={stock.sym} value={stock.sym}>
+                      {stock.sym} · {stock.name} · P/E {stock.pe}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="form-label">
+                Explain the moat
+                <textarea
+                  className="input"
+                  onChange={(event) => {
+                    setSideQuestError("");
+                    setSideQuestAnswer(event.target.value);
+                  }}
+                  placeholder="Example: Google has a strong moat because people keep using search and YouTube, which helps the business protect ad profits."
+                  rows={4}
+                  style={{ minHeight: 116, resize: "vertical" }}
+                  value={sideQuestAnswer}
+                />
+              </label>
+              {sideQuestError ? <div className="form-error">{sideQuestError}</div> : null}
+              <button className="primary-button" disabled={sideQuestLoading || !selectedSideQuestStock} type="submit">
+                {sideQuestLoading ? "BILL is checking..." : "Submit answer"}
+                <Send size={16} />
+              </button>
+            </form>
+          ) : null}
         </section>
       </div>
     );
@@ -2424,6 +2609,14 @@ export function BillionaireApp() {
                     {wizard.action === "skip" ? "Back to market" : "Confirm and start micro-quiz"}
                     <ArrowRight size={16} />
                   </button>
+                ) : null}
+                {wizardQuizLoading ? (
+                  <section className="quiz-card">
+                    <div className="section-kicker gold">Building your micro-quiz</div>
+                    <p className="muted" style={{ margin: "8px 0 0", fontSize: 13 }}>
+                      BILL is making fresh questions for this stock and avoiding ones you already answered.
+                    </p>
+                  </section>
                 ) : null}
                 {wizard.quiz ? (
                   <>

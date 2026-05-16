@@ -36,6 +36,7 @@ type GameState = GameProgressPayload & {
     style: InvestmentStyleId | "quick";
   }) => void;
   completeMission: (id: string) => void;
+  claimMissionReward: (id: string, reward: number) => boolean;
   resetTodayProgress: () => void;
   markStudied: (style: InvestmentStyleId) => void;
   rewardCorrectQuizAnswer: () => number;
@@ -247,6 +248,15 @@ export const useGameStore = create<GameState>()(
         set((state) => ({
           completedMissions: Array.from(new Set([...state.completedMissions, id]))
         })),
+      claimMissionReward: (id, reward) => {
+        const state = get();
+        if (state.completedMissions.includes(id)) return false;
+        set({
+          cash: state.cash + reward,
+          completedMissions: [...state.completedMissions, id]
+        });
+        return true;
+      },
       resetTodayProgress: () =>
         set((state) => {
           const today = getLocalDateKey();

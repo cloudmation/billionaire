@@ -90,6 +90,7 @@ export type Quiz = {
 export type QuizResult = {
   id: string;
   topic: string;
+  questions?: string[];
   correct: number;
   total: number;
   reward: number;
