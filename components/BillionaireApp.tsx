@@ -54,7 +54,7 @@ import {
   STYLES
 } from "@/lib/game-data";
 import { getActiveCheckInStreak, getDailyCheckInReward, getLocalDateKey, getNextCheckInStreak, useGameStore } from "@/lib/store";
-import type { CSSProperties } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import type {
   BillMessage,
   EraYear,
@@ -1018,6 +1018,34 @@ export function BillionaireApp() {
     return Array.from(bySector.entries()).map(([name, value]) => ({ name, value }));
   }, [allStocks, holdings]);
 
+  function startBillPanelResize(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (window.matchMedia("(max-width: 1180px)").matches) return;
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = billPanelWidth;
+    const previousCursor = document.body.style.cursor;
+    const previousUserSelect = document.body.style.userSelect;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    const move = (moveEvent: PointerEvent) => {
+      const nextWidth = startWidth + startX - moveEvent.clientX;
+      setBillPanelWidth(Math.min(MAX_BILL_PANEL_WIDTH, Math.max(MIN_BILL_PANEL_WIDTH, nextWidth)));
+    };
+
+    const stop = () => {
+      document.body.style.cursor = previousCursor;
+      document.body.style.userSelect = previousUserSelect;
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
+    };
+
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
+  }
+
   function commitUserName(nextUserName: string) {
     const nextName = nextUserName.trim() || userName || "Investor";
     setUserName(nextName);
@@ -1566,6 +1594,15 @@ export function BillionaireApp() {
   function renderBillPanel() {
     return (
       <aside className={clsx("bill-panel", billPanelOpen && "open")} aria-label="BILL AI investing coach">
+        <button
+          aria-label="Resize BILL panel"
+          className="bill-resize-handle"
+          onPointerDown={startBillPanelResize}
+          title="Drag to resize BILL"
+          type="button"
+        >
+          <span />
+        </button>
         <div className="bill-header">
           <div className="row">
             <div className="bill-avatar">
@@ -1593,19 +1630,6 @@ export function BillionaireApp() {
               </button>
             ))}
           </div>
-          <label className="bill-width-control">
-            <span>Chat width</span>
-            <input
-              aria-label="Adjust BILL chat width"
-              max={MAX_BILL_PANEL_WIDTH}
-              min={MIN_BILL_PANEL_WIDTH}
-              onChange={(event) => setBillPanelWidth(Number(event.currentTarget.value))}
-              onInput={(event) => setBillPanelWidth(Number(event.currentTarget.value))}
-              step={20}
-              type="range"
-              value={billPanelWidth}
-            />
-          </label>
         </div>
 
         <div className="chat-scroll" ref={chatScrollRef}>

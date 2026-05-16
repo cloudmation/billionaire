@@ -487,6 +487,36 @@ button:disabled {
   flex-direction: column;
 }
 
+.bill-resize-handle {
+  position: absolute;
+  inset: 0 auto 0 -7px;
+  z-index: 4;
+  display: grid;
+  width: 14px;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  cursor: col-resize;
+  padding: 0;
+}
+
+.bill-resize-handle span {
+  display: block;
+  width: 3px;
+  height: 54px;
+  border-radius: 999px;
+  background: rgba(85, 199, 247, 0.34);
+  box-shadow: 0 0 18px rgba(85, 199, 247, 0.18);
+  opacity: 0.46;
+  transition: opacity 150ms ease, background 150ms ease;
+}
+
+.bill-resize-handle:hover span,
+.bill-resize-handle:focus-visible span {
+  background: var(--cyan);
+  opacity: 1;
+}
+
 .bill-close,
 .bill-drawer-backdrop,
 .bill-fab {
@@ -1177,24 +1207,6 @@ button:disabled {
   color: var(--text);
 }
 
-.bill-width-control {
-  display: grid;
-  grid-template-columns: auto minmax(120px, 1fr);
-  gap: 10px;
-  align-items: center;
-  margin-top: 12px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.bill-width-control input {
-  accent-color: var(--cyan);
-  cursor: pointer;
-}
-
 .chat-scroll {
   flex: 1;
   overflow: auto;
@@ -1776,7 +1788,7 @@ select.input {
     display: grid;
   }
 
-  .bill-width-control {
+  .bill-resize-handle {
     display: none;
   }
 
