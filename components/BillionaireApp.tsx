@@ -581,11 +581,11 @@ function StockPriceChart({
   data: Array<{ date: string; value: number }>;
   stock: Stock;
 }) {
-  if (data.length < 2) {
+  if (!data.length) {
     return (
       <div className="empty-state" style={{ minHeight: 180 }}>
         <strong>No price chart yet</strong>
-        <span>{stock.sym} needs more historical points for a chart in this mode.</span>
+        <span>{stock.sym} does not have historical prices for this mode yet.</span>
       </div>
     );
   }
@@ -598,13 +598,15 @@ function StockPriceChart({
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = Math.max(0.01, max - min);
+  const hasLine = data.length > 1;
   const point = (value: number, index: number) => {
-    const x = padX + (index / Math.max(1, data.length - 1)) * (width - padX * 2);
+    const x = hasLine ? padX + (index / (data.length - 1)) * (width - padX * 2) : width / 2;
     const y = height - padY - ((value - min) / span) * (height - padY * 2);
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   };
   const points = data.map((item, index) => point(item.value, index)).join(" ");
-  const area = `${padX},${height - padY} ${points} ${width - padX},${height - padY}`;
+  const singlePoint = point(data[0].value, 0);
+  const area = hasLine ? `${padX},${height - padY} ${points} ${width - padX},${height - padY}` : "";
   const first = data[0];
   const last = data[data.length - 1];
   const move = ((last.value - first.value) / Math.max(0.01, first.value)) * 100;
@@ -616,11 +618,11 @@ function StockPriceChart({
         <div>
           <div className="section-kicker">Price chart</div>
           <strong>
-            {formatMarketDate(first.date)} to {formatMarketDate(last.date)}
+            {hasLine ? `${formatMarketDate(first.date)} to ${formatMarketDate(last.date)}` : `${formatMarketDate(first.date)} starting point`}
           </strong>
         </div>
         <div className={move >= 0 ? "green" : "red"} style={{ fontWeight: 900 }}>
-          {pct(move)}
+          {hasLine ? pct(move) : "Day 1"}
         </div>
       </div>
       <svg aria-label={`${stock.sym} price chart`} className="svg-chart" preserveAspectRatio="none" role="img" viewBox={`0 0 ${width} ${height}`}>
@@ -642,17 +644,29 @@ function StockPriceChart({
             y2={padY + line * (height - padY * 2)}
           />
         ))}
-        <polygon fill={`url(#${gradientId})`} points={area} />
-        <polyline fill="none" points={points} stroke="#55c7f7" strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" />
-        {[first, last].map((item) => {
-          const index = item === first ? 0 : data.length - 1;
-          const [cx, cy] = point(item.value, index).split(",").map(Number);
-          return <circle cx={cx} cy={cy} fill="#f0c76d" key={`${item.date}-${item.value}`} r={5} />;
-        })}
+        {hasLine ? (
+          <>
+            <polygon fill={`url(#${gradientId})`} points={area} />
+            <polyline fill="none" points={points} stroke="#55c7f7" strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" />
+            {[first, last].map((item) => {
+              const index = item === first ? 0 : data.length - 1;
+              const [cx, cy] = point(item.value, index).split(",").map(Number);
+              return <circle cx={cx} cy={cy} fill="#f0c76d" key={`${item.date}-${item.value}`} r={5} />;
+            })}
+          </>
+        ) : (
+          <>
+            <line stroke="#55c7f7" strokeDasharray="8 10" strokeLinecap="round" strokeOpacity="0.72" strokeWidth="4" x1={padX} x2={width - padX} y1={height / 2} y2={height / 2} />
+            <circle cx={Number(singlePoint.split(",")[0])} cy={height / 2} fill="#f0c76d" r={8} />
+            <text fill="#aeb7c8" fontSize="15" fontWeight="800" textAnchor="middle" x={width / 2} y={height / 2 - 20}>
+              First simulated price
+            </text>
+          </>
+        )}
       </svg>
       <div className="space-between muted stock-chart-foot">
         <span>{fmt(first.value)}</span>
-        <span>{fmt(last.value)}</span>
+        <span>{hasLine ? fmt(last.value) : "Line appears after the next simulated trading day"}</span>
       </div>
     </div>
   );
