@@ -103,6 +103,16 @@ export function getDailyCheckInReward(streak: number) {
   return Math.min(500, 100 + (Math.max(1, streak) - 1) * 50);
 }
 
+function validJourneyStart(value: string | null | undefined) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : value;
+}
+
+function normalizeJourneyStart(hasOnboarded: boolean, journeyStartedAt: string | null | undefined) {
+  return hasOnboarded ? validJourneyStart(journeyStartedAt) ?? new Date().toISOString() : journeyStartedAt ?? null;
+}
+
 const initialState: GameProgressPayload = {
   hasOnboarded: false,
   userName: "",
@@ -128,7 +138,11 @@ export const useGameStore = create<GameState>()(
     (set, get) => ({
       ...initialState,
       hydrated: false,
-      setHydrated: () => set({ hydrated: true }),
+      setHydrated: () =>
+        set((state) => ({
+          hydrated: true,
+          journeyStartedAt: normalizeJourneyStart(state.hasOnboarded, state.journeyStartedAt)
+        })),
       loadProgress: (progress) =>
         set((state) => ({
           ...state,
@@ -138,7 +152,10 @@ export const useGameStore = create<GameState>()(
           playerAge: progress.playerAge ?? state.playerAge,
           gameMode: progress.gameMode ?? state.gameMode,
           startYear: progress.startYear ?? state.startYear,
-          journeyStartedAt: progress.journeyStartedAt ?? null,
+          journeyStartedAt: normalizeJourneyStart(
+            progress.hasOnboarded ?? state.hasOnboarded,
+            progress.journeyStartedAt !== undefined ? progress.journeyStartedAt : state.journeyStartedAt
+          ),
           lastCheckInDate: progress.lastCheckInDate !== undefined ? progress.lastCheckInDate : state.lastCheckInDate,
           checkInStreak: progress.checkInStreak ?? state.checkInStreak,
           holdings: progress.holdings ?? state.holdings,
@@ -155,9 +172,11 @@ export const useGameStore = create<GameState>()(
           userName: userName.trim() || "Investor"
         }),
       setGameMode: (gameMode) =>
-        set({
-          gameMode
-        }),
+        set((state) => ({
+          gameMode,
+          journeyStartedAt:
+            gameMode === "time-machine" ? normalizeJourneyStart(state.hasOnboarded, state.journeyStartedAt) : state.journeyStartedAt
+        })),
       startNewJourney: ({ userName, startYear, playerAge = 12 }) =>
         set({
           hasOnboarded: true,
