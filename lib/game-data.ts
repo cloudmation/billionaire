@@ -12,6 +12,7 @@ import dailyPrices from "./historical-daily-prices.json";
 
 export const DEFAULT_YEAR = 2010;
 export const STARTING_CASH = 1000;
+export const TRADES_PER_DAY = 3;
 
 export const ERAS = [
   {

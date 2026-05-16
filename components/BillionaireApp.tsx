@@ -54,7 +54,8 @@ import {
   QUIZ_POOL,
   QUIZ_CORRECT_REWARD,
   SIMULATED_MARKET_DAY_MS,
-  STYLES
+  STYLES,
+  TRADES_PER_DAY
 } from "@/lib/game-data";
 import { getActiveCheckInStreak, getDailyCheckInReward, getLocalDateKey, getNextCheckInStreak, useGameStore } from "@/lib/store";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
@@ -998,6 +999,8 @@ export function BillionaireApp() {
     () => trades.filter((trade) => getLocalDateKey(new Date(trade.createdAt)) === todayKey),
     [todayKey, trades]
   );
+  const tradesLeftToday = Math.max(0, TRADES_PER_DAY - todaysTrades.length);
+  const tradeLimitReached = tradesLeftToday <= 0;
   const allStocks = useMemo(() => {
     return getMarketStocks({ gameMode, startYear, journeyStartedAt, customStocks }, marketNow);
   }, [customStocks, gameMode, journeyStartedAt, marketNow, startYear]);
@@ -1749,16 +1752,19 @@ export function BillionaireApp() {
       setWizard(null);
       return;
     }
+    if (tradeLimitReached) return;
     const style = wizard.style ?? "quick";
+    let traded = false;
     if (wizard.action === "buy") {
       const affordableShares = Math.floor(cash / Math.max(0.01, stock.price));
       if (affordableShares < 1) return;
-      buyStock({ sym: stock.sym, shares: Math.min(wizard.shares, affordableShares), price: stock.price, style });
+      traded = buyStock({ sym: stock.sym, shares: Math.min(wizard.shares, affordableShares), price: stock.price, style });
     } else {
       const ownedShares = holdings.find((holding) => holding.sym === stock.sym)?.shares ?? 0;
       if (ownedShares < 1) return;
-      sellStock({ sym: stock.sym, shares: Math.min(wizard.shares, ownedShares), price: stock.price, style });
+      traded = sellStock({ sym: stock.sym, shares: Math.min(wizard.shares, ownedShares), price: stock.price, style });
     }
+    if (!traded) return;
     updateWizard({
       confirmed: true,
       quiz: null
@@ -1919,7 +1925,7 @@ export function BillionaireApp() {
           <div className="side-section">
             <div className="section-kicker">Trades left</div>
             <div className="display" style={{ color: "var(--green)", fontSize: 30, marginTop: 4 }}>
-              {Math.max(0, 3 - todaysTrades.length)} / 3
+              {tradesLeftToday} / {TRADES_PER_DAY}
             </div>
           </div>
         </aside>
@@ -2310,7 +2316,7 @@ export function BillionaireApp() {
         subtitle: "Today's market lens with BILL coaching",
         bullets: [
           "Use the current watchlist as today's market board",
-          "3 trades per day — choose wisely",
+          `${TRADES_PER_DAY} trades per day — choose wisely`,
           "BILL answers in live-market context"
         ]
       }
@@ -2535,7 +2541,7 @@ export function BillionaireApp() {
             </button>
             <div className="mode-pill">
               {isLiveMode ? <Radio size={14} /> : <Target size={14} />}
-              {isLiveMode ? "Live Market" : "3 trades/day"}
+              {isLiveMode ? "Live Market" : `${tradesLeftToday}/${TRADES_PER_DAY} trades left`}
             </div>
           </div>
         </div>
@@ -3045,10 +3051,22 @@ export function BillionaireApp() {
                   {fmt(rowGain)}
                 </span>
                 <div className="portfolio-trade-actions">
-                  <button className="success-button trade-mini-button" onClick={() => openPortfolioTrade(stock, "buy", holding.shares)} type="button">
+                  <button
+                    className="success-button trade-mini-button"
+                    disabled={tradeLimitReached}
+                    onClick={() => openPortfolioTrade(stock, "buy", holding.shares)}
+                    title={tradeLimitReached ? "Daily trade limit reached" : "Buy more shares"}
+                    type="button"
+                  >
                     Buy
                   </button>
-                  <button className="danger-button trade-mini-button" onClick={() => openPortfolioTrade(stock, "sell", holding.shares)} type="button">
+                  <button
+                    className="danger-button trade-mini-button"
+                    disabled={tradeLimitReached}
+                    onClick={() => openPortfolioTrade(stock, "sell", holding.shares)}
+                    title={tradeLimitReached ? "Daily trade limit reached" : "Sell shares"}
+                    type="button"
+                  >
                     Sell
                   </button>
                 </div>
@@ -3173,6 +3191,7 @@ export function BillionaireApp() {
     const sizedShares = Math.min(Math.max(1, wizard.shares), shareLimit);
     const tradeDisabled =
       !wizard.action ||
+      (wizard.action !== "skip" && tradeLimitReached) ||
       (wizard.action === "buy" && cash < stock.price) ||
       (wizard.action === "sell" && ownedShares < 1);
     const backLabel = wizard.origin === "portfolio" ? "Back to Portfolio" : "Back to Market";
@@ -3377,7 +3396,7 @@ export function BillionaireApp() {
                   {(["buy", "sell", "skip"] as const).map((action) => (
                     <button
                       className={clsx(action === "buy" ? "success-button" : action === "sell" ? "danger-button" : "plain-button")}
-                      disabled={action === "buy" ? cash < stock.price : action === "sell" ? ownedShares < 1 : false}
+                      disabled={action === "buy" ? tradeLimitReached || cash < stock.price : action === "sell" ? tradeLimitReached || ownedShares < 1 : false}
                       key={action}
                       onClick={() =>
                         updateWizard({
@@ -3396,6 +3415,16 @@ export function BillionaireApp() {
                     </button>
                   ))}
                 </div>
+                {tradeLimitReached ? (
+                  <section className="card" style={{ borderColor: "rgba(240,93,94,0.34)" }}>
+                    <div className="section-kicker" style={{ color: "var(--red)" }}>
+                      Daily trade limit reached
+                    </div>
+                    <p className="muted" style={{ margin: "8px 0 0", lineHeight: 1.5 }}>
+                      You used all {TRADES_PER_DAY} trades for today. Come back tomorrow to buy or sell again.
+                    </p>
+                  </section>
+                ) : null}
                 {wizard.action === "buy" || wizard.action === "sell" ? (
                   <section className="card">
                     <div className="section-kicker">Shares</div>

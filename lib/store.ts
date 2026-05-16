@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { DEFAULT_YEAR, INITIAL_HOLDINGS, QUIZ_CORRECT_REWARD, STARTING_CASH } from "./game-data";
+import { DEFAULT_YEAR, INITIAL_HOLDINGS, QUIZ_CORRECT_REWARD, STARTING_CASH, TRADES_PER_DAY } from "./game-data";
 import type {
   EraYear,
   GameMode,
@@ -30,13 +30,13 @@ type GameState = GameProgressPayload & {
     shares: number;
     price: number;
     style: InvestmentStyleId | "quick";
-  }) => void;
+  }) => boolean;
   sellStock: (input: {
     sym: string;
     shares: number;
     price: number;
     style: InvestmentStyleId | "quick";
-  }) => void;
+  }) => boolean;
   completeMission: (id: string) => void;
   resetTodayProgress: () => void;
   markStudied: (style: InvestmentStyleId) => void;
@@ -67,6 +67,11 @@ function reduceHolding(holdings: Holding[], sym: string, shares: number) {
 
 function tradeId() {
   return `trade-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function todaysTradeCount(trades: Trade[]) {
+  const today = getLocalDateKey();
+  return trades.filter((trade) => getLocalDateKey(new Date(trade.createdAt)) === today).length;
 }
 
 function conceptKey(style: InvestmentStyleId, term: string, dateKey: string) {
@@ -231,51 +236,55 @@ export const useGameStore = create<GameState>()(
           nextReward: getDailyCheckInReward(nextStreak + 1)
         };
       },
-      buyStock: ({ sym, shares, price, style }) =>
-        set((state) => {
-          const affordableShares = Math.floor(state.cash / price);
-          if (affordableShares < 1) return state;
-          const cappedShares = Math.max(1, Math.min(shares, affordableShares));
-          const finalCost = cappedShares * price;
-          const trade: Trade = {
-            id: tradeId(),
-            sym,
-            action: "buy",
-            shares: cappedShares,
-            price,
-            style,
-            createdAt: new Date().toISOString()
-          };
-          return {
-            cash: state.cash - finalCost,
-            holdings: upsertHolding(state.holdings, sym, cappedShares, price),
-            trades: [trade, ...state.trades].slice(0, 20),
-            completedMissions: Array.from(new Set([...state.completedMissions, "analysis"])),
-            studiedStyles: style === "quick" ? state.studiedStyles : Array.from(new Set([...state.studiedStyles, style]))
-          };
-        }),
-      sellStock: ({ sym, shares, price, style }) =>
-        set((state) => {
-          const owned = state.holdings.find((holding) => holding.sym === sym)?.shares ?? 0;
-          const cappedShares = Math.max(0, Math.min(shares, owned));
-          if (!cappedShares) return state;
-          const trade: Trade = {
-            id: tradeId(),
-            sym,
-            action: "sell",
-            shares: cappedShares,
-            price,
-            style,
-            createdAt: new Date().toISOString()
-          };
-          return {
-            cash: state.cash + cappedShares * price,
-            holdings: reduceHolding(state.holdings, sym, cappedShares),
-            trades: [trade, ...state.trades].slice(0, 20),
-            completedMissions: Array.from(new Set([...state.completedMissions, "analysis"])),
-            studiedStyles: style === "quick" ? state.studiedStyles : Array.from(new Set([...state.studiedStyles, style]))
-          };
-        }),
+      buyStock: ({ sym, shares, price, style }) => {
+        const state = get();
+        if (todaysTradeCount(state.trades) >= TRADES_PER_DAY) return false;
+        const affordableShares = Math.floor(state.cash / price);
+        if (affordableShares < 1) return false;
+        const cappedShares = Math.max(1, Math.min(shares, affordableShares));
+        const finalCost = cappedShares * price;
+        const trade: Trade = {
+          id: tradeId(),
+          sym,
+          action: "buy",
+          shares: cappedShares,
+          price,
+          style,
+          createdAt: new Date().toISOString()
+        };
+        set({
+          cash: state.cash - finalCost,
+          holdings: upsertHolding(state.holdings, sym, cappedShares, price),
+          trades: [trade, ...state.trades].slice(0, 20),
+          completedMissions: Array.from(new Set([...state.completedMissions, "analysis"])),
+          studiedStyles: style === "quick" ? state.studiedStyles : Array.from(new Set([...state.studiedStyles, style]))
+        });
+        return true;
+      },
+      sellStock: ({ sym, shares, price, style }) => {
+        const state = get();
+        if (todaysTradeCount(state.trades) >= TRADES_PER_DAY) return false;
+        const owned = state.holdings.find((holding) => holding.sym === sym)?.shares ?? 0;
+        const cappedShares = Math.max(0, Math.min(shares, owned));
+        if (!cappedShares) return false;
+        const trade: Trade = {
+          id: tradeId(),
+          sym,
+          action: "sell",
+          shares: cappedShares,
+          price,
+          style,
+          createdAt: new Date().toISOString()
+        };
+        set({
+          cash: state.cash + cappedShares * price,
+          holdings: reduceHolding(state.holdings, sym, cappedShares),
+          trades: [trade, ...state.trades].slice(0, 20),
+          completedMissions: Array.from(new Set([...state.completedMissions, "analysis"])),
+          studiedStyles: style === "quick" ? state.studiedStyles : Array.from(new Set([...state.studiedStyles, style]))
+        });
+        return true;
+      },
       completeMission: (id) =>
         set((state) => ({
           completedMissions: Array.from(new Set([...state.completedMissions, id]))
@@ -286,7 +295,6 @@ export const useGameStore = create<GameState>()(
           return {
             completedMissions: [],
             studiedConcepts: state.studiedConcepts.filter((concept) => concept.learnedOn !== today),
-            trades: state.trades.filter((trade) => getLocalDateKey(new Date(trade.createdAt)) !== today),
             quizHistory: state.quizHistory.filter((quiz) => getLocalDateKey(new Date(quiz.createdAt)) !== today),
             sideQuestHistory: state.sideQuestHistory.filter((quest) => getLocalDateKey(new Date(quest.createdAt)) !== today)
           };
