@@ -352,6 +352,12 @@ button:disabled {
   color: var(--green);
 }
 
+.last-update-pill {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+}
+
 .mode-button:hover,
 .text-button:hover {
   border-color: rgba(255, 91, 214, 0.68);

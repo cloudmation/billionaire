@@ -185,6 +185,14 @@ function formatCountdown(ms: number) {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
+function formatClockTime(date: Date) {
+  return date.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+}
+
 function learningDayIndexFromJourney(journeyStartedAt: string | null, now: Date) {
   if (!journeyStartedAt) return 0;
   const started = new Date(journeyStartedAt);
@@ -958,6 +966,16 @@ export function BillionaireApp() {
     : nextPriceUpdateMs == null
       ? "Updates every 5 min"
       : `Next price update ${formatCountdown(nextPriceUpdateMs)}`;
+  const lastPriceUpdateAt = useMemo(() => {
+    if (isLiveMode) return marketNow;
+    if (!journeyStartedAt) return null;
+    const started = new Date(journeyStartedAt);
+    if (Number.isNaN(started.getTime())) return null;
+    const elapsed = Math.max(0, marketNow.getTime() - started.getTime());
+    const elapsedIntervals = Math.floor(elapsed / SIMULATED_MARKET_DAY_MS);
+    return new Date(started.getTime() + elapsedIntervals * SIMULATED_MARKET_DAY_MS);
+  }, [isLiveMode, journeyStartedAt, marketNow]);
+  const lastPriceUpdateLabel = lastPriceUpdateAt ? `Last updated ${formatClockTime(lastPriceUpdateAt)}` : "Last updated just now";
   const checkedInToday = lastCheckInDate === getLocalDateKey();
   const activeCheckInStreak = getActiveCheckInStreak(lastCheckInDate, checkInStreak);
   const nextCheckInStreak = getNextCheckInStreak(lastCheckInDate, checkInStreak);
@@ -1001,8 +1019,18 @@ export function BillionaireApp() {
   }, [messages, billLoading, billQuiz]);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setMarketNow(new Date()), 1_000);
-    return () => window.clearInterval(timer);
+    const refreshClock = () => setMarketNow(new Date());
+    const handleVisibility = () => {
+      if (!document.hidden) refreshClock();
+    };
+    const timer = window.setInterval(refreshClock, 1_000);
+    window.addEventListener("focus", refreshClock);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshClock);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, []);
 
   useEffect(() => {
@@ -1643,6 +1671,9 @@ export function BillionaireApp() {
           <span className="mode-pill price-update-pill">
             <Clock3 size={14} />
             {priceUpdateLabel}
+          </span>
+          <span className="mode-pill last-update-pill">
+            {lastPriceUpdateLabel}
           </span>
           <div className="progress-rail" aria-label="Milestone progress">
             <div className="progress-fill" style={{ width: `${milestoneProgress * 100}%` }} />
@@ -2371,6 +2402,9 @@ export function BillionaireApp() {
             <div className="mode-pill price-update-pill">
               <Clock3 size={14} />
               {priceUpdateLabel}
+            </div>
+            <div className="mode-pill last-update-pill">
+              {lastPriceUpdateLabel}
             </div>
           </div>
         </div>
