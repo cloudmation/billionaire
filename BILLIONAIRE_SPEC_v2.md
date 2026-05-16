@@ -86,6 +86,8 @@ These rules supersede older language elsewhere in the spec if there is a conflic
 - Quiz questions answered correctly should reward cash.
 - Side quests should reward cash only when accepted/completed.
 - Daily missions must include clear action links and short guides so a beginner knows exactly where to go and what to do.
+- Daily mission completion is per local calendar day and must reset automatically at midnight for each player.
+- Daily mission checkmarks should be derived from today's activity, such as today's trades, today's studied concepts, and today's diversification work, not from permanent completed IDs.
 
 ### AI Tutor Availability and Behavior
 - BILL must be available and usable on every page.

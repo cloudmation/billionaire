@@ -837,7 +837,6 @@ export function BillionaireApp() {
   const startNewJourney = useGameStore((state) => state.startNewJourney);
   const addCustomStock = useGameStore((state) => state.addCustomStock);
   const claimDailyCheckIn = useGameStore((state) => state.claimDailyCheckIn);
-  const completeMission = useGameStore((state) => state.completeMission);
   const markStudied = useGameStore((state) => state.markStudied);
   const markConceptStudied = useGameStore((state) => state.markConceptStudied);
   const rewardCorrectQuizAnswer = useGameStore((state) => state.rewardCorrectQuizAnswer);
@@ -917,6 +916,10 @@ export function BillionaireApp() {
     [todaysStudiedConcepts]
   );
   const todaysConceptCount = Math.min(DAILY_CONCEPT_GOAL, todaysStudiedConcepts.length);
+  const todaysTrades = useMemo(
+    () => trades.filter((trade) => getLocalDateKey(new Date(trade.createdAt)) === todayKey),
+    [todayKey, trades]
+  );
   const allStocks = useMemo(() => {
     return getMarketStocks({ gameMode, startYear, journeyStartedAt, customStocks }, marketNow);
   }, [customStocks, gameMode, journeyStartedAt, marketNow, startYear]);
@@ -1147,13 +1150,25 @@ export function BillionaireApp() {
     });
     return Array.from(bySector.entries()).map(([name, value]) => ({ name, value }));
   }, [allStocks, holdings]);
+  const todaysTradeSectors = useMemo(() => {
+    const sectors = new Set<string>();
+    todaysTrades.forEach((trade) => {
+      const stock = allStocks.find((candidate) => candidate.sym === trade.sym);
+      if (stock) sectors.add(stock.sector);
+    });
+    return sectors;
+  }, [allStocks, todaysTrades]);
+  const dailyAnalysisDone = todaysTrades.length > 0;
+  const dailyDiversifyDone = todaysTradeSectors.size >= 2 || (todaysTrades.length > 0 && allocation.length >= 2);
   const missionViews = useMemo(
     () =>
       MISSIONS.map((mission) => {
         const done =
           mission.id === "concepts"
             ? todaysConceptCount >= DAILY_CONCEPT_GOAL
-            : completedMissions.includes(mission.id) || (mission.id === "diversify" && allocation.length >= 2);
+            : mission.id === "analysis"
+              ? dailyAnalysisDone
+              : dailyDiversifyDone;
         const details =
           mission.id === "analysis"
             ? {
@@ -1174,18 +1189,8 @@ export function BillionaireApp() {
                 };
         return { ...mission, ...details, done };
       }),
-    [allocation.length, completedMissions, todaysConceptCount]
+    [dailyAnalysisDone, dailyDiversifyDone, todaysConceptCount]
   );
-
-  useEffect(() => {
-    if (!hydrated || !hasOnboarded) return;
-    if (todaysConceptCount >= DAILY_CONCEPT_GOAL && !completedMissions.includes("concepts")) {
-      completeMission("concepts");
-    }
-    if (allocation.length >= 2 && !completedMissions.includes("diversify")) {
-      completeMission("diversify");
-    }
-  }, [allocation.length, completeMission, completedMissions, hasOnboarded, hydrated, todaysConceptCount]);
 
   function startBillPanelResize(event: ReactPointerEvent<HTMLButtonElement>) {
     if (window.matchMedia("(max-width: 1180px)").matches) return;
@@ -1800,7 +1805,7 @@ export function BillionaireApp() {
           <div className="side-section">
             <div className="section-kicker">Trades left</div>
             <div className="display" style={{ color: "var(--green)", fontSize: 30, marginTop: 4 }}>
-              {Math.max(0, 3 - trades.filter((trade) => trade.createdAt.slice(0, 10) === new Date().toISOString().slice(0, 10)).length)} / 3
+              {Math.max(0, 3 - todaysTrades.length)} / 3
             </div>
           </div>
         </aside>
