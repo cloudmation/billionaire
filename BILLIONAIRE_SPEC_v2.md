@@ -1,6 +1,6 @@
 # BILLIONAIRE
-### Product Development Specification v2.0
-#### Updated: Web-First · Contextual Learning · AI-Powered Tutoring
+### Product Development Specification v2.1
+#### Updated: Web-First · Contextual Learning · AI-Powered Tutoring · Daily Historical Simulation
 
 ---
 
@@ -9,6 +9,126 @@
 **One sentence:** A web-based investing game where a 12-year-old learns to think like a real investor by actually investing — guided step-by-step by an AI tutor who teaches, quizzes, and challenges her at every decision.
 
 **What changed in v2:** The game now teaches. Instead of just simulating trades, every trade becomes a mini-curriculum. She doesn't just buy Apple — she learns *why* a value investor buys Apple differently than a growth investor does. The AI doesn't just answer questions; it builds lessons, generates quizzes, and creates challenges in real time around what she's doing right now.
+
+**What changed in v2.1:** Product rules were refined after implementation. The app now supports named player profiles, Time Machine and Live Market modes, real historical daily stock prices, AI-generated quizzes that avoid repeats, answerable side quests, a leaderboard, daily check-in rewards, custom tickers, and industry-standard investing terminology.
+
+---
+
+## 1.1 Product Rules Added During Implementation
+
+These rules supersede older language elsewhere in the spec if there is a conflict.
+
+### Audience and Tone
+- The app is for kids and young teenagers, especially a 12-year-old beginner.
+- The UI should feel cool and modern for a teenager, but static labels and menus must use industry-standard investing terms.
+- Use terms like **Portfolio**, **Market**, **Leaderboard**, **Cash**, **Investments**, **Gain/Loss**, **Net Worth**, and **Daily Check-in**.
+- Avoid playful menu/static terms such as "Lineup," "Stock Arena," "Cash stack," "Stock power," or "Score move."
+- BILL should explain investing in simple language and assume the player has no prior knowledge.
+
+### User Profiles and Persistence
+- A new player starts with onboarding:
+  - Enter username.
+  - Assume default player age is 12.
+  - Choose a starting Time Machine era.
+- Users can log out/switch profiles by username.
+- Existing usernames should load saved progress.
+- New usernames should start a fresh journey.
+- Progress is persisted by username.
+- Current production persistence target is Neon Postgres, with local file fallback for development.
+
+### Game Modes
+- The player can choose between:
+  - **Time Machine**: historical simulation.
+  - **Live Market**: today-oriented mode.
+- Live Market mode is available from the UI.
+- Live Market currently uses the latest seeded/live snapshot in the app; it is not yet a true real-time market feed.
+
+### Time Machine Historical Simulation
+- Time Machine must use real historical stock values for the simulated date, not today's prices.
+- Historical prices must be split-adjusted so long-term holdings behave like real historical investing.
+- The simulation starts at the player-selected era.
+- Time is accelerated:
+  - 1 real day represents about 1 market year.
+  - 1 simulated trading day unlocks about every 5 minutes 43 seconds.
+  - Weekends and market holidays are skipped by walking through real historical trading dates.
+- The UI should show the simulated market date, not just the year.
+- Portfolio value, trading prices, BILL context, leaderboard net worth, and stock cards must all use the same simulated market date.
+- The simulation caps at the latest available historical market date.
+
+### Starting Eras
+- Supported Time Machine starting eras:
+  - 2000: Dot-com Bubble.
+  - 2005: Pre-Crisis Calm.
+  - 2010: Recovery Begins. Recommended.
+  - 2015: Mobile Era.
+  - 2020: COVID Crash.
+- A new user chooses an era during onboarding.
+
+### Market Universe
+- The Market includes a growing list of companies/tickers.
+- Current required tickers include Apple, Amazon, Netflix, Tesla, Google, Nvidia, Cisco, Nike, Disney, Starbucks, Roblox, Spotify, and Duolingo.
+- Cisco (`CSCO`) is explicitly required.
+- Users can add custom tickers from the UI.
+- Custom tickers should appear in the Market list and be usable in portfolio calculations.
+- Custom tickers do not have historical daily data unless added later; they use user-entered price data.
+
+### Daily Rewards
+- Users get more money when they check in each day.
+- Daily check-in should pay a cash reward and track a streak.
+- Quiz questions answered correctly should reward cash.
+- Side quests should reward cash only when accepted/completed.
+
+### AI Tutor Availability and Behavior
+- BILL must be available and usable on every page.
+- BILL must remain usable even when modal dialogs are active.
+- BILL should use OpenAI through the configured environment key.
+- BILL should use a system prompt that:
+  - Assumes no prior investing knowledge.
+  - Explains terms simply.
+  - Uses short paragraphs, clear bullets, and bold sparingly.
+  - Avoids long tables and jargon-heavy answers.
+  - Never gives personal financial advice.
+- BILL should be contextual:
+  - Current page.
+  - Selected stock.
+  - Game mode.
+  - Simulated market date.
+  - Portfolio and cash.
+  - Recent trades.
+  - Custom tickers.
+  - Previously answered quiz questions.
+
+### Quiz Rules
+- Quizzes should be generated by AI when possible, not only from static local questions.
+- Quizzes should not repeat previously answered questions.
+- Quiz history must store the actual question text, not just score totals.
+- Correct answers reward cash.
+- If AI is unavailable, a small local fallback quiz is acceptable.
+- Trade micro-quizzes should be fresh and tied to the selected stock/style when possible.
+
+### Side Quest Rules
+- Side quests should be answerable in the app, not just a button that redirects to Market.
+- A side quest must not give away the correct ticker.
+- The player must find the ticker in the Market and enter it.
+- The app validates whether the entered ticker satisfies the side quest criteria.
+- The player must explain their reasoning in a short written answer.
+- BILL reviews the answer in simple language.
+- Once a side quest is completed, a new side quest appears.
+- There is a daily side quest limit.
+- Current daily side quest limit: 3 per user per local day.
+- Side quest completions are tracked separately from regular daily missions.
+
+### Leaderboard
+- The app includes a leaderboard.
+- Leaderboard ranking is based on net worth.
+- Net worth should use the same price mode/date as the player's game progress.
+- Leaderboard rows should show investor name, net worth, holdings count, missions, quiz correct count, streak, and updated time.
+
+### Deployment and Repository
+- App is deployed to Vercel.
+- Production alias: `billionaire-six.vercel.app`.
+- Repository target: `github.com/cloudmation/billionaire`.
+- Production environment uses Neon Postgres for persistence.
 
 ---
 
@@ -45,13 +165,13 @@ The entire application uses a persistent three-column shell:
 
 ### Left Sidebar Contents
 - App logo + tagline
-- Navigation (Home, Market, Learn, Portfolio, Ladder)
+- Navigation (Home, Market, Learn, Portfolio, Leaderboard)
 - Today's progress: missions completed, concepts learned
 - Quick stats: current streak, trades remaining
 - Learning path: currently studying what investing style
 
 ### Right BILL Panel (always visible on desktop)
-- Persistent AI chat (Claude API)
+- Persistent AI chat (OpenAI API)
 - Context-aware: knows what screen you're on, what stock you're looking at
 - Quick action buttons that change per screen:
   - On Market: "Explain this stock," "Quiz me on P/E ratios"
@@ -176,8 +296,8 @@ BILL is not a chatbot. BILL is an active teaching system that can:
 
 | Capability | How it works |
 |---|---|
-| **Answer questions** | Standard Claude chat, tuned to 12-year-old language |
-| **Generate quizzes** | "Quiz me on value investing" → BILL creates 5 fresh questions with options |
+| **Answer questions** | OpenAI-backed chat, tuned to beginner-friendly 12-year-old language |
+| **Generate quizzes** | "Quiz me on value investing" → BILL creates fresh questions with options and avoids repeats |
 | **Create challenges** | "Give me a challenge" → BILL invents a task: "Find me a dividend stock with yield > 3%" |
 | **Debrief trades** | After every trade: "Let's review what just happened and why" |
 | **Portfolio analysis** | "Analyze my portfolio" → BILL identifies concentration risk, suggests questions |
@@ -195,7 +315,8 @@ BILL's system prompt is dynamically constructed per interaction, injecting:
 - What screen/context the player is on
 - Recent trade history (last 3 trades)
 - Which investing styles have been studied
-- Quiz performance history (what concepts they've struggled with)
+- Quiz performance history and previously answered question text
+- Current simulated market date and mode
 
 This makes BILL feel like it knows the player personally.
 
@@ -283,7 +404,7 @@ BILLIONAIRE (Web App)
 │   │   ├── "Practice with a real stock" → launches Analysis Wizard
 │   │   └── "Quiz me on this" → BILL generates quiz
 │   ├── My Quiz History (recent results)
-│   └── BILL's Challenge of the Day
+│   └── BILL's Side Quest (answerable ticker hunt, AI-reviewed, daily cap)
 │
 ├── 💼 PORTFOLIO
 │   ├── Net Worth chart (history graph)
@@ -293,7 +414,13 @@ BILLIONAIRE (Web App)
 │   ├── Compare vs S&P 500
 │   └── "Ask BILL to analyze my portfolio" button
 │
-├── 🏆 LADDER
+├── 🏆 LEADERBOARD
+│   ├── Investor leaderboard ranked by net worth
+│   ├── Current player rank
+│   ├── Holdings, missions, quiz correct, streak, updated time
+│   └── Uses mode/date-aware portfolio value
+│
+├── 🏆 MILESTONES
 │   ├── Visual milestone progression ($1K → $1B)
 │   ├── Current position highlighted
 │   ├── Each milestone: amount, title, emoji, what unlocks
@@ -337,17 +464,17 @@ Replace the simple milestone ladder with a two-axis progression:
 | Layer | Technology | Rationale |
 |---|---|---|
 | Framework | Next.js 14 (App Router) | SSR, fast, web-native, deploy to Vercel |
-| Styling | Tailwind CSS + CSS Modules | Utility classes + custom design system |
+| Styling | Global CSS + custom design system | Teen-friendly interface with controlled terminology |
 | State | Zustand | Simple, performant global state |
-| Database | Supabase (PostgreSQL) | Auth + real-time + storage |
-| Auth | Supabase Auth + Google SSO | Easy parent/child account linking |
-| Market Data (Live) | Polygon.io | Reliable, generous free tier |
-| Market Data (Historical) | Tiingo / pre-cached DB | Pre-loaded, no runtime cost |
-| AI Tutor | Anthropic Claude API (claude-sonnet-4-20250514) | Streaming responses, quiz generation |
-| Charts | Recharts or Tremor | React-native charting |
-| Animations | Framer Motion | Smooth, production-grade |
+| Database | Neon PostgreSQL | Free-tier friendly production persistence |
+| Auth | Username-based profile switching in MVP | Low-friction kid-friendly access; full auth later |
+| Market Data (Live) | Seeded latest snapshot in MVP | True live feed is future work |
+| Market Data (Historical) | Pre-cached split-adjusted daily prices | Fast Time Machine mode, no runtime market API needed |
+| AI Tutor | OpenAI API | Beginner explanations, quiz generation, answer review |
+| Charts | Lightweight SVG / React UI | Avoid unnecessary chart dependencies in MVP |
+| Animations | CSS / React transitions | Smooth enough for MVP |
 | Hosting | Vercel | Zero-config Next.js |
-| Notifications | Resend (email) | Daily market flash digest |
+| Notifications | Future | Not in current MVP |
 
 ### 8.2 AI Architecture
 
@@ -356,13 +483,13 @@ BILL Request Flow:
 1. Player action (open stock, ask question, request quiz)
 2. Client assembles context payload:
    { playerProfile, currentHoldings, currentScreen, 
-     selectedStock, quizHistory, recentTrades, gameYear }
+     selectedStock, quizHistory, answeredQuestionText, recentTrades, marketDate }
 3. POST to /api/bill (Next.js route handler)
 4. Route handler builds system prompt from context
-5. Stream Claude response back to client
+5. Request OpenAI response
 6. If response contains [QUIZ] tag: parse as quiz JSON, render quiz UI
-7. If response contains [CHALLENGE] tag: parse and display mission card
-8. Log interaction to Supabase for parent dashboard
+7. If response is side-quest feedback: display in BILL panel
+8. Log interaction to database or local fallback
 ```
 
 ### 8.3 Quiz JSON Contract
@@ -390,9 +517,17 @@ Frontend detects `[QUIZ]...[/QUIZ]`, strips it from chat text, renders interacti
 
 ### 8.4 Pre-Cached Historical Data
 
-For Time Machine mode, all stock data is pre-loaded into Supabase:
-- Adjusted closing prices 2000–present for 50 stocks
-- Pre-computed annual returns per stock per year
+For Time Machine mode, stock data is pre-loaded in the app:
+- Split-adjusted daily closing prices 2000–present for supported stocks
+- Simulated date advances about every 5 minutes 43 seconds
+- Weekends and holidays are skipped using real historical trading dates
+- Mode/date-aware prices are used for stock cards, trades, portfolio, BILL context, and leaderboard
+- Historical price source is seeded data, not runtime API calls
+- Current supported tickers include AAPL, AMZN, NFLX, TSLA, GOOGL, NVDA, CSCO, NKE, DIS, SBUX, RBLX, SPOT, DUOL
+- Custom tickers use user-entered price data until historical data exists
+
+Future expansion:
+- Adjusted closing prices for 50+ stocks
 - Pre-written "Year in Review" narrative (AI-generated once, cached) for 2000–2023
 - Pre-computed key metrics (P/E, revenue growth) per stock per year
 
@@ -404,25 +539,34 @@ This means Time Machine mode requires zero real-time API calls — it's instant.
 
 ### Include in v1.0
 - Web desktop app (Next.js)
-- Time Machine mode: 2010 start, 20 US stocks
+- Onboarding with username, age assumption, and era selection
+- Username-based profile switching / logout
+- Time Machine mode: selectable start era, daily historical simulation, supported stock universe
+- Live Market mode: seeded latest-market snapshot
 - Analysis Wizard (all 5 styles, steps 1–5)
 - Value Investing + Growth Investing full lesson modules
-- BILL chat (question answering + quiz generation)
+- BILL chat available on every page and above modal dialogs
+- BILL chat question answering, quiz generation, portfolio analysis, and side-quest answer review
 - 2 quiz types: concept-check and apply-to-stock
-- Home, Market, Learn (2 styles), Portfolio, Ladder screens
+- Home, Market, Learn (2 styles), Portfolio, Leaderboard/Milestones screens
 - Milestone ladder ($1K → $1M, first 4 tiers)
 - Daily missions (hardcoded 3 per day)
-- Login + save progress (Supabase)
+- Daily check-in rewards
+- Quiz correct-answer cash rewards
+- Answerable side quests with player-discovered ticker entry and 3-per-day cap
+- Leaderboard
+- Custom ticker entry
+- Save progress with Neon Postgres and local fallback
 
 ### Exclude from v1.0
-- Live Market mode
 - TA + Dividend + Momentum lesson modules (data ready, UI not built)
 - Parent dashboard
 - Social/sharing features
 - Mobile layout
 - Push/email notifications
 - Knowledge badges system
-- Challenge generation (quiz only)
+- True real-time live market API
+- Formal login/auth beyond username profile switching
 
 ### Revised Timeline
 | Phase | Duration | Deliverable |
@@ -457,8 +601,10 @@ This means Time Machine mode requires zero real-time API calls — it's instant.
 2. Does BILL remember conversations across sessions, or reset daily?
 3. How do we handle the parent/child account linking UX? Does a parent approve each trade?
 4. What is the right daily mission refresh cadence — midnight UTC or per-user local time?
-5. Should quiz performance affect net worth (bonus money for correct answers), or keep them separate?
+5. What is the long-term reward economy balance for check-ins, quizzes, side quests, and missions?
 6. Do we want a "class mode" for school use from the start, or is that a later product?
+7. Which provider should power true real-time Live Market prices later?
+8. Should custom tickers eventually fetch historical data automatically?
 
 ---
 
