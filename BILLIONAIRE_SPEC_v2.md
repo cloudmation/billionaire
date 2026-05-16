@@ -55,8 +55,9 @@ These rules supersede older language elsewhere in the spec if there is a conflic
 - The UI should also show the simulated trading day count, such as `Sim Day 1 · Jan 3, 2000`, anywhere the Time Machine date is used as the main page/time label.
 - The UI should show a countdown to the next Time Machine price update so players can tell the market is moving.
 - The UI should show the last price update time and refresh it immediately when the browser tab regains focus.
+- Time-related UI must be concise: use one compact global market status for mode, simulated day/date, and next update; avoid repeating the same countdown or date chips in page action bars.
 - Portfolio value, trading prices, BILL context, leaderboard net worth, and stock cards must all use the same simulated market date.
-- Portfolio should show market date, next price update, last update time, current per-share price, and daily price move so holdings do not appear frozen.
+- Portfolio should show market date, last update time, current per-share price, and daily price move so holdings do not appear frozen without duplicating the global countdown.
 - The simulation caps at the latest available historical market date.
 - Stock analysis should use an inline Market workspace rather than a tall modal, with a sticky stock summary/progress header and a clear Back to Market action.
 

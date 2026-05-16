@@ -951,7 +951,6 @@ export function BillionaireApp() {
   const formattedMarketDate = isLiveMode ? "Today" : formatMarketDate(marketDate);
   const simulatedMarketLabel = simulatedMarketDay ? `Sim Day ${simulatedMarketDay} · ${formattedMarketDate}` : formattedMarketDate;
   const currentEra = ERAS.find((era) => era.year === startYear) ?? ERAS.find((era) => era.year === DEFAULT_YEAR)!;
-  const modeLabel = isLiveMode ? "Live Market" : `Time Machine · ${simulatedMarketLabel}`;
   const marketDateLabel = isLiveMode ? formattedMarketDate : simulatedMarketLabel;
   const nextPriceUpdateMs = useMemo(() => {
     if (isLiveMode || !journeyStartedAt) return null;
@@ -965,7 +964,8 @@ export function BillionaireApp() {
     ? "Live prices"
     : nextPriceUpdateMs == null
       ? "Updates every 5 min"
-      : `Next price update ${formatCountdown(nextPriceUpdateMs)}`;
+      : `Next ${formatCountdown(nextPriceUpdateMs)}`;
+  const marketStatusLabel = isLiveMode ? "Live Market" : `Time Machine · ${simulatedMarketLabel} · ${priceUpdateLabel}`;
   const lastPriceUpdateAt = useMemo(() => {
     if (isLiveMode) return marketNow;
     if (!journeyStartedAt) return null;
@@ -1674,15 +1674,8 @@ export function BillionaireApp() {
         <div className="milestone-strip">
           <button className="mode-pill mode-button" onClick={() => setModePickerOpen(true)} type="button">
             {isLiveMode ? <Radio size={14} /> : <Sparkles size={14} />}
-            {modeLabel}
+            {marketStatusLabel}
           </button>
-          <span className="mode-pill price-update-pill">
-            <Clock3 size={14} />
-            {priceUpdateLabel}
-          </span>
-          <span className="mode-pill last-update-pill">
-            {lastPriceUpdateLabel}
-          </span>
           <div className="progress-rail" aria-label="Milestone progress">
             <div className="progress-fill" style={{ width: `${milestoneProgress * 100}%` }} />
           </div>
@@ -2419,13 +2412,6 @@ export function BillionaireApp() {
               {isLiveMode ? <Radio size={14} /> : <Target size={14} />}
               {isLiveMode ? "Live Market" : "3 trades/day"}
             </div>
-            <div className="mode-pill price-update-pill">
-              <Clock3 size={14} />
-              {priceUpdateLabel}
-            </div>
-            <div className="mode-pill last-update-pill">
-              {lastPriceUpdateLabel}
-            </div>
           </div>
         </div>
 
@@ -2840,10 +2826,6 @@ export function BillionaireApp() {
         <div className="filter-row" style={{ marginTop: -6 }}>
           <span className="mode-pill">
             {marketDateLabel}
-          </span>
-          <span className="mode-pill price-update-pill">
-            <Clock3 size={14} />
-            {priceUpdateLabel}
           </span>
           <span className="mode-pill last-update-pill">
             {lastPriceUpdateLabel}
