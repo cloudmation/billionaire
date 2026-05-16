@@ -1,6 +1,7 @@
 "use client";
 
 import clsx from "clsx";
+import { INVESTOR_APPRENTICESHIP } from "@/lib/curriculum";
 import {
   ArrowRight,
   Banknote,
@@ -871,6 +872,13 @@ export function BillionaireApp() {
     () => new Set(quizHistory.flatMap((quiz) => quiz.questions ?? [])),
     [quizHistory]
   );
+  const learningSignalCount = Math.max(0, studiedStyles.length - 1) + quizHistory.length + sideQuestHistory.length;
+  const activeLessonIndex = Math.min(
+    INVESTOR_APPRENTICESHIP.length - 1,
+    Math.max(0, activeCheckInStreak - 1, Math.floor(learningSignalCount / 2))
+  );
+  const activeLesson = INVESTOR_APPRENTICESHIP[activeLessonIndex];
+  const learningProgress = (activeLessonIndex + 1) / INVESTOR_APPRENTICESHIP.length;
 
   useEffect(() => {
     const panel = chatScrollRef.current;
@@ -2236,7 +2244,95 @@ export function BillionaireApp() {
 
     return (
       <div className="fade-in stack">
-        <SectionHeader title="Learning Paths" subtitle="Level up your investing lenses, then use them in the Market." />
+        <SectionHeader title="Learning Paths" subtitle="A guided month of investing lessons that gets harder as you grow." />
+
+        <section className="card apprenticeship-card">
+          <div className="space-between apprenticeship-head">
+            <div>
+              <div className="section-kicker gold">30-day investor apprenticeship</div>
+              <h2 className="display apprenticeship-title">
+                Day {activeLesson.day}: {activeLesson.title}
+              </h2>
+              <p className="muted apprenticeship-copy">
+                {activeLesson.mentor}'s lens · {activeLesson.level} · {activeLesson.focus}
+              </p>
+            </div>
+            <div className="lesson-day-badge">
+              {activeLesson.day}
+              <span>/30</span>
+            </div>
+          </div>
+          <div className="progress-rail" aria-label="Learning path progress">
+            <div className="progress-fill" style={{ width: `${learningProgress * 100}%` }} />
+          </div>
+          <div className="grid-2 apprenticeship-body">
+            <div className="panel-block">
+              <div className="section-kicker">Today's lesson</div>
+              <p>{activeLesson.lesson}</p>
+            </div>
+            <div className="panel-block">
+              <div className="section-kicker">Practice</div>
+              <p>{activeLesson.activity}</p>
+            </div>
+          </div>
+          <div className="row apprenticeship-actions">
+            <button
+              className="primary-button"
+              onClick={() =>
+                sendBill(
+                  `Teach me Day ${activeLesson.day} of the 30-day investor apprenticeship: ${activeLesson.title}. Explain it for a 12-year-old, go one level deeper than the app card, then give me one small action to do in the app.`
+                )
+              }
+              type="button"
+            >
+              <Bot size={17} />
+              Start lesson with BILL
+            </button>
+            <button className="plain-button" onClick={() => sendBill(`Quiz me on Day ${activeLesson.day}: ${activeLesson.title}. Do not repeat questions I already answered.`)} type="button">
+              <BookOpen size={17} />
+              Quiz this lesson
+            </button>
+            <button className="plain-button" onClick={() => setTab("market")} type="button">
+              <ArrowRight size={17} />
+              Practice in Market
+            </button>
+          </div>
+        </section>
+
+        <section className="card curriculum-map">
+          <div className="space-between">
+            <div>
+              <div className="section-kicker">Month roadmap</div>
+              <p className="muted" style={{ margin: "6px 0 0" }}>
+                The path starts with ownership and ends with a full investor memo.
+              </p>
+            </div>
+            <span className="mode-pill">{activeLesson.week}</span>
+          </div>
+          <div className="curriculum-grid">
+            {INVESTOR_APPRENTICESHIP.map((lesson, index) => {
+              const active = index === activeLessonIndex;
+              const done = index < activeLessonIndex;
+              return (
+                <button
+                  className={clsx("curriculum-day", active && "active", done && "done")}
+                  key={lesson.day}
+                  onClick={() =>
+                    sendBill(
+                      `Preview Day ${lesson.day} of the investor apprenticeship: ${lesson.title}. Keep it short, explain why this matters, and give one practice step.`
+                    )
+                  }
+                  type="button"
+                >
+                  <span>{lesson.day}</span>
+                  <strong>{lesson.title}</strong>
+                  <small>{lesson.level}</small>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
         <div className="grid-2">
           {STYLES.map((style) => {
             const unlocked = netWorth >= style.unlockedAt || style.id === "value" || style.id === "growth";

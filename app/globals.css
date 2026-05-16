@@ -712,6 +712,188 @@ button:disabled {
   opacity: 0.75;
 }
 
+.apprenticeship-card {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(183, 255, 74, 0.26);
+  background:
+    linear-gradient(135deg, rgba(183, 255, 74, 0.12), rgba(85, 199, 247, 0.08), rgba(255, 91, 214, 0.06)),
+    rgba(10, 15, 24, 0.96);
+}
+
+.apprenticeship-card::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--acid), var(--cyan), var(--pink));
+  content: "";
+}
+
+.apprenticeship-head,
+.apprenticeship-body,
+.apprenticeship-actions,
+.curriculum-map > * {
+  position: relative;
+  z-index: 1;
+}
+
+.apprenticeship-title {
+  margin: 6px 0 0;
+  color: var(--text);
+  font-size: 42px;
+  line-height: 0.96;
+}
+
+.apprenticeship-copy {
+  margin: 8px 0 0;
+  font-weight: 800;
+}
+
+.lesson-day-badge {
+  display: grid;
+  width: 78px;
+  min-width: 78px;
+  height: 78px;
+  place-items: center;
+  border: 1px solid rgba(183, 255, 74, 0.42);
+  border-radius: var(--radius);
+  background: rgba(183, 255, 74, 0.11);
+  color: var(--acid);
+  font-family: "Bebas Neue", Inter, sans-serif;
+  font-size: 46px;
+  letter-spacing: 0.04em;
+  line-height: 0.82;
+  box-shadow: 0 18px 44px rgba(183, 255, 74, 0.08);
+}
+
+.lesson-day-badge span {
+  color: var(--muted);
+  font-family: Inter, sans-serif;
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+}
+
+.apprenticeship-card .progress-rail {
+  position: relative;
+  z-index: 1;
+  margin: 16px 0;
+  height: 9px;
+  background: rgba(7, 10, 18, 0.78);
+}
+
+.apprenticeship-body .panel-block {
+  padding: 14px;
+}
+
+.apprenticeship-body p {
+  margin: 8px 0 0;
+  color: var(--text);
+  line-height: 1.58;
+}
+
+.apprenticeship-actions {
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.apprenticeship-actions button {
+  min-height: 42px;
+}
+
+.curriculum-map {
+  position: relative;
+  overflow: hidden;
+}
+
+.curriculum-map::before {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(85, 199, 247, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(85, 199, 247, 0.05) 1px, transparent 1px);
+  background-size: 42px 42px;
+  content: "";
+  opacity: 0.5;
+}
+
+.curriculum-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.curriculum-day {
+  display: grid;
+  grid-template-rows: auto minmax(42px, 1fr) auto;
+  gap: 7px;
+  min-height: 128px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(17, 24, 39, 0.84);
+  color: var(--text);
+  text-align: left;
+  transition: border-color 150ms ease, transform 150ms ease, background 150ms ease;
+}
+
+.curriculum-day:hover {
+  border-color: rgba(85, 199, 247, 0.58);
+  transform: translateY(-2px);
+}
+
+.curriculum-day.active {
+  border-color: rgba(183, 255, 74, 0.72);
+  background: linear-gradient(135deg, rgba(183, 255, 74, 0.14), rgba(85, 199, 247, 0.08)), rgba(17, 24, 39, 0.94);
+  box-shadow: 0 0 0 1px rgba(183, 255, 74, 0.08), 0 18px 42px rgba(0, 0, 0, 0.2);
+}
+
+.curriculum-day.done {
+  border-color: rgba(39, 199, 123, 0.46);
+  background: rgba(39, 199, 123, 0.08);
+}
+
+.curriculum-day span {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: var(--radius);
+  background: rgba(85, 199, 247, 0.12);
+  color: var(--cyan);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.curriculum-day.active span {
+  background: rgba(183, 255, 74, 0.16);
+  color: var(--acid);
+}
+
+.curriculum-day.done span {
+  background: rgba(39, 199, 123, 0.14);
+  color: var(--green);
+}
+
+.curriculum-day strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.curriculum-day small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .ticker-badge {
   display: grid;
   width: 42px;
@@ -1593,6 +1775,10 @@ select.input {
     font-weight: 950;
     box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
   }
+
+  .curriculum-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 900px) {
@@ -1712,6 +1898,29 @@ select.input {
 
   .checkin-actions {
     justify-content: flex-start;
+  }
+
+  .apprenticeship-head {
+    align-items: flex-start;
+  }
+
+  .apprenticeship-title {
+    font-size: 34px;
+  }
+
+  .lesson-day-badge {
+    width: 62px;
+    min-width: 62px;
+    height: 62px;
+    font-size: 36px;
+  }
+
+  .curriculum-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .curriculum-day {
+    min-height: 118px;
   }
 
   .table {
