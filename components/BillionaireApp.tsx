@@ -774,6 +774,7 @@ export function BillionaireApp() {
   const startNewJourney = useGameStore((state) => state.startNewJourney);
   const addCustomStock = useGameStore((state) => state.addCustomStock);
   const claimDailyCheckIn = useGameStore((state) => state.claimDailyCheckIn);
+  const completeMission = useGameStore((state) => state.completeMission);
   const markStudied = useGameStore((state) => state.markStudied);
   const rewardCorrectQuizAnswer = useGameStore((state) => state.rewardCorrectQuizAnswer);
   const recordQuiz = useGameStore((state) => state.recordQuiz);
@@ -1034,6 +1035,42 @@ export function BillionaireApp() {
     });
     return Array.from(bySector.entries()).map(([name, value]) => ({ name, value }));
   }, [allStocks, holdings]);
+  const missionViews = useMemo(
+    () =>
+      MISSIONS.map((mission) => {
+        const done =
+          completedMissions.includes(mission.id) ||
+          (mission.id === "concepts" && studiedStyles.length >= 3) ||
+          (mission.id === "diversify" && allocation.length >= 2);
+        const details =
+          mission.id === "analysis"
+            ? {
+                guide: "Go to Market, pick any stock, choose an investing lens, answer BILL's question, then buy, sell, or skip.",
+                action: "Open Market"
+              }
+            : mission.id === "concepts"
+              ? {
+                  guide: "Open Learn, choose a path, read concepts, and ask BILL to quiz you. Three studied concepts completes this.",
+                  action: "Open Learn"
+                }
+              : {
+                  guide: "Own stocks from at least two sectors, like Tech plus Food or Media. Run the wizard before each trade.",
+                  action: "Find stocks"
+                };
+        return { ...mission, ...details, done };
+      }),
+    [allocation.length, completedMissions, studiedStyles.length]
+  );
+
+  useEffect(() => {
+    if (!hydrated || !hasOnboarded) return;
+    if (studiedStyles.length >= 3 && !completedMissions.includes("concepts")) {
+      completeMission("concepts");
+    }
+    if (allocation.length >= 2 && !completedMissions.includes("diversify")) {
+      completeMission("diversify");
+    }
+  }, [allocation.length, completeMission, completedMissions, hasOnboarded, hydrated, studiedStyles.length]);
 
   function startBillPanelResize(event: ReactPointerEvent<HTMLButtonElement>) {
     if (window.matchMedia("(max-width: 1180px)").matches) return;
@@ -1066,6 +1103,17 @@ export function BillionaireApp() {
   function commitUserName(nextUserName: string) {
     const nextName = nextUserName.trim() || userName || "Investor";
     setUserName(nextName);
+  }
+
+  function openMissionGuide(missionId: string) {
+    if (missionId === "concepts") {
+      setTab("learn");
+      setLearnStyle(null);
+      return;
+    }
+    setTab("market");
+    setSearch("");
+    setSector("All");
   }
 
   function finishOnboarding() {
@@ -1540,12 +1588,14 @@ export function BillionaireApp() {
                 Reset
               </button>
             </div>
-            {MISSIONS.map((mission) => {
-              const done = completedMissions.includes(mission.id);
+            {missionViews.map((mission) => {
               return (
                 <div className="side-mission" key={mission.id}>
-                  <span className={clsx("check-dot", done && "done")}>{done ? <Check size={12} /> : null}</span>
-                  <span style={{ textDecoration: done ? "line-through" : "none" }}>{mission.text}</span>
+                  <span className={clsx("check-dot", mission.done && "done")}>{mission.done ? <Check size={12} /> : null}</span>
+                  <button className="mission-link" onClick={() => openMissionGuide(mission.id)} type="button">
+                    <span style={{ textDecoration: mission.done ? "line-through" : "none" }}>{mission.text}</span>
+                    <small>{mission.action}</small>
+                  </button>
                 </div>
               );
             })}
@@ -2130,24 +2180,30 @@ export function BillionaireApp() {
                 Reset today
               </button>
             </div>
-            {MISSIONS.map((mission) => {
-              const done = completedMissions.includes(mission.id);
+            {missionViews.map((mission) => {
               return (
-                <div className="space-between" key={mission.id} style={{ padding: "14px 0", borderBottom: "1px solid var(--line-soft)" }}>
-                  <div className="row">
-                    <span className={clsx("check-dot", done && "done")}>{done ? <Check size={12} /> : null}</span>
-                    <div>
-                      <strong style={{ color: done ? "var(--muted)" : "var(--text)", textDecoration: done ? "line-through" : "none" }}>
+                <div className="mission-card" key={mission.id}>
+                  <div className="mission-card-main">
+                    <span className={clsx("check-dot", mission.done && "done")}>{mission.done ? <Check size={12} /> : null}</span>
+                    <div className="mission-copy">
+                      <strong style={{ color: mission.done ? "var(--muted)" : "var(--text)", textDecoration: mission.done ? "line-through" : "none" }}>
                         {mission.text}
                       </strong>
-                      <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>
+                      <div className="muted" style={{ fontSize: 12, marginTop: 3, fontWeight: 800 }}>
                         {mission.concept}
                       </div>
+                      <p>{mission.guide}</p>
                     </div>
                   </div>
-                  <span className="gold" style={{ fontWeight: 900 }}>
-                    +{fmtCompact(mission.reward)}
-                  </span>
+                  <div className="mission-actions">
+                    <span className="gold" style={{ fontWeight: 900 }}>
+                      +{fmtCompact(mission.reward)}
+                    </span>
+                    <button className="plain-button" onClick={() => openMissionGuide(mission.id)} type="button">
+                      {mission.action}
+                      <ArrowRight size={15} />
+                    </button>
+                  </div>
                 </div>
               );
             })}

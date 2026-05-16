@@ -132,7 +132,7 @@ export const useGameStore = create<GameState>()(
           gameMode: progress.gameMode ?? state.gameMode,
           startYear: progress.startYear ?? state.startYear,
           journeyStartedAt: progress.journeyStartedAt ?? null,
-          lastCheckInDate: progress.lastCheckInDate ?? state.lastCheckInDate,
+          lastCheckInDate: progress.lastCheckInDate !== undefined ? progress.lastCheckInDate : state.lastCheckInDate,
           checkInStreak: progress.checkInStreak ?? state.checkInStreak,
           holdings: progress.holdings ?? state.holdings,
           customStocks: progress.customStocks ?? state.customStocks,

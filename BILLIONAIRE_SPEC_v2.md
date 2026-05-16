@@ -75,9 +75,11 @@ These rules supersede older language elsewhere in the spec if there is a conflic
 
 ### Daily Rewards
 - Users get more money when they check in each day.
+- Daily check-in status is per username/profile. One user's claim must not block another user's claim.
 - Daily check-in should pay a cash reward and track a streak.
 - Quiz questions answered correctly should reward cash.
 - Side quests should reward cash only when accepted/completed.
+- Daily missions must include clear action links and short guides so a beginner knows exactly where to go and what to do.
 
 ### AI Tutor Availability and Behavior
 - BILL must be available and usable on every page.

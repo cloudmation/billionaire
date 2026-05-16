@@ -579,6 +579,28 @@ button:disabled {
   line-height: 1.35;
 }
 
+.mission-link {
+  display: grid;
+  gap: 3px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  text-align: left;
+}
+
+.mission-link:hover {
+  color: var(--text);
+}
+
+.mission-link small {
+  color: var(--cyan);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .check-dot {
   display: grid;
   width: 18px;
@@ -592,6 +614,45 @@ button:disabled {
 .check-dot.done {
   background: var(--green);
   border-color: var(--green);
+}
+
+.mission-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.mission-card-main {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.mission-copy {
+  min-width: 0;
+}
+
+.mission-copy p {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.mission-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.mission-actions .plain-button {
+  min-height: 34px;
 }
 
 .path-row {
@@ -1972,6 +2033,15 @@ select.input {
 
   .leaderboard-summary {
     flex-direction: column;
+  }
+
+  .mission-card {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .mission-actions {
+    justify-content: flex-start;
   }
 
   .leaderboard-score {
