@@ -106,6 +106,7 @@ const navItems: Array<{ id: TabId; label: string; icon: typeof Home }> = [
 
 const sectorColors = ["#d7a531", "#27c77b", "#55c7f7", "#a78bfa", "#fb8a3c", "#f05d5e"];
 const SIDE_QUEST_DAILY_LIMIT = 3;
+const DAILY_CONCEPT_GOAL = 3;
 const DEFAULT_BILL_PANEL_WIDTH = 460;
 const MIN_BILL_PANEL_WIDTH = 360;
 const MAX_BILL_PANEL_WIDTH = 620;
@@ -763,6 +764,7 @@ export function BillionaireApp() {
   const customStocks = useGameStore((state) => state.customStocks);
   const completedMissions = useGameStore((state) => state.completedMissions);
   const studiedStyles = useGameStore((state) => state.studiedStyles);
+  const studiedConcepts = useGameStore((state) => state.studiedConcepts);
   const trades = useGameStore((state) => state.trades);
   const quizHistory = useGameStore((state) => state.quizHistory);
   const sideQuestHistory = useGameStore((state) => state.sideQuestHistory);
@@ -776,6 +778,7 @@ export function BillionaireApp() {
   const claimDailyCheckIn = useGameStore((state) => state.claimDailyCheckIn);
   const completeMission = useGameStore((state) => state.completeMission);
   const markStudied = useGameStore((state) => state.markStudied);
+  const markConceptStudied = useGameStore((state) => state.markConceptStudied);
   const rewardCorrectQuizAnswer = useGameStore((state) => state.rewardCorrectQuizAnswer);
   const recordQuiz = useGameStore((state) => state.recordQuiz);
   const recordSideQuest = useGameStore((state) => state.recordSideQuest);
@@ -844,6 +847,15 @@ export function BillionaireApp() {
   }, [billPanelWidth]);
 
   const todayKey = getLocalDateKey(marketNow);
+  const todaysStudiedConcepts = useMemo(
+    () => studiedConcepts.filter((concept) => concept.learnedOn === todayKey),
+    [studiedConcepts, todayKey]
+  );
+  const todaysStudiedConceptIds = useMemo(
+    () => new Set(todaysStudiedConcepts.map((concept) => `${concept.style}:${concept.term}`)),
+    [todaysStudiedConcepts]
+  );
+  const todaysConceptCount = Math.min(DAILY_CONCEPT_GOAL, todaysStudiedConcepts.length);
   const allStocks = useMemo(() => {
     return getMarketStocks({ gameMode, startYear, journeyStartedAt, customStocks }, marketNow);
   }, [customStocks, gameMode, journeyStartedAt, marketNow, startYear]);
@@ -976,6 +988,7 @@ export function BillionaireApp() {
     customStocks,
     completedMissions,
     studiedStyles,
+    studiedConcepts,
     trades,
     quizHistory,
     sideQuestHistory,
@@ -1039,9 +1052,9 @@ export function BillionaireApp() {
     () =>
       MISSIONS.map((mission) => {
         const done =
-          completedMissions.includes(mission.id) ||
-          (mission.id === "concepts" && studiedStyles.length >= 3) ||
-          (mission.id === "diversify" && allocation.length >= 2);
+          mission.id === "concepts"
+            ? todaysConceptCount >= DAILY_CONCEPT_GOAL
+            : completedMissions.includes(mission.id) || (mission.id === "diversify" && allocation.length >= 2);
         const details =
           mission.id === "analysis"
             ? {
@@ -1050,8 +1063,11 @@ export function BillionaireApp() {
               }
             : mission.id === "concepts"
               ? {
-                  guide: "Open Learn, choose a path, read concepts, and ask BILL to quiz you. Three studied concepts completes this.",
-                  action: "Open Learn"
+                  guide: "Open Learn, choose a path, read concept cards, then tap Mark learned on three cards.",
+                  action: "Open Learn",
+                  progress: todaysConceptCount,
+                  progressTotal: DAILY_CONCEPT_GOAL,
+                  progressLabel: `${todaysConceptCount}/${DAILY_CONCEPT_GOAL} concepts today`
                 }
               : {
                   guide: "Own stocks from at least two sectors, like Tech plus Food or Media. Run the wizard before each trade.",
@@ -1059,18 +1075,18 @@ export function BillionaireApp() {
                 };
         return { ...mission, ...details, done };
       }),
-    [allocation.length, completedMissions, studiedStyles.length]
+    [allocation.length, completedMissions, todaysConceptCount]
   );
 
   useEffect(() => {
     if (!hydrated || !hasOnboarded) return;
-    if (studiedStyles.length >= 3 && !completedMissions.includes("concepts")) {
+    if (todaysConceptCount >= DAILY_CONCEPT_GOAL && !completedMissions.includes("concepts")) {
       completeMission("concepts");
     }
     if (allocation.length >= 2 && !completedMissions.includes("diversify")) {
       completeMission("diversify");
     }
-  }, [allocation.length, completeMission, completedMissions, hasOnboarded, hydrated, studiedStyles.length]);
+  }, [allocation.length, completeMission, completedMissions, hasOnboarded, hydrated, todaysConceptCount]);
 
   function startBillPanelResize(event: ReactPointerEvent<HTMLButtonElement>) {
     if (window.matchMedia("(max-width: 1180px)").matches) return;
@@ -1594,7 +1610,7 @@ export function BillionaireApp() {
                   <span className={clsx("check-dot", mission.done && "done")}>{mission.done ? <Check size={12} /> : null}</span>
                   <button className="mission-link" onClick={() => openMissionGuide(mission.id)} type="button">
                     <span style={{ textDecoration: mission.done ? "line-through" : "none" }}>{mission.text}</span>
-                    <small>{mission.action}</small>
+                    <small>{mission.progressLabel ? `${mission.progressLabel} · ${mission.action}` : mission.action}</small>
                   </button>
                 </div>
               );
@@ -2193,6 +2209,20 @@ export function BillionaireApp() {
                         {mission.concept}
                       </div>
                       <p>{mission.guide}</p>
+                      {mission.progressTotal ? (
+                        <div className="mission-progress" aria-label={mission.progressLabel}>
+                          <div className="mission-progress-row">
+                            <span>{mission.progressLabel}</span>
+                            <span>{mission.done ? "Complete" : `${mission.progressTotal - mission.progress} left`}</span>
+                          </div>
+                          <div className="mission-progress-track">
+                            <div
+                              className="mission-progress-fill"
+                              style={{ width: `${Math.min(100, (mission.progress / mission.progressTotal) * 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                   <div className="mission-actions">
@@ -2337,17 +2367,37 @@ export function BillionaireApp() {
             </div>
           </section>
           <div className="grid-2">
-            {concepts.map((concept) => (
-              <article className="card" key={concept.term}>
-                <h3 style={{ color: style.color, margin: "0 0 8px", fontSize: 16 }}>{concept.term}</h3>
-                <p className="muted" style={{ margin: 0, lineHeight: 1.55 }}>
-                  {concept.short}
-                </p>
-                <div className="panel-block" style={{ borderColor: `${style.color}30`, marginTop: 12, padding: 11 }}>
-                  <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>{concept.simple}</p>
-                </div>
-              </article>
-            ))}
+            {concepts.map((concept) => {
+              const learnedToday = todaysStudiedConceptIds.has(`${style.id}:${concept.term}`);
+              return (
+                <article className={clsx("card", "concept-card", learnedToday && "learned")} key={concept.term}>
+                  <div className="space-between concept-card-heading">
+                    <h3 style={{ color: style.color, margin: 0, fontSize: 16 }}>{concept.term}</h3>
+                    {learnedToday ? (
+                      <span className="concept-learned-pill">
+                        <Check size={12} />
+                        Learned
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="muted" style={{ margin: "8px 0 0", lineHeight: 1.55 }}>
+                    {concept.short}
+                  </p>
+                  <div className="panel-block" style={{ borderColor: `${style.color}30`, marginTop: 12, padding: 11 }}>
+                    <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>{concept.simple}</p>
+                  </div>
+                  <button
+                    className={clsx("concept-learn-button", learnedToday && "done")}
+                    disabled={learnedToday}
+                    onClick={() => markConceptStudied(style.id, concept.term)}
+                    type="button"
+                  >
+                    {learnedToday ? <Check size={15} /> : <Plus size={15} />}
+                    {learnedToday ? "Learned today" : "Mark learned"}
+                  </button>
+                </article>
+              );
+            })}
           </div>
           <div className="grid-2">
             <button

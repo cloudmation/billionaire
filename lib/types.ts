@@ -106,6 +106,14 @@ export type SideQuestResult = {
   createdAt: string;
 };
 
+export type StudiedConcept = {
+  id: string;
+  style: InvestmentStyleId;
+  term: string;
+  learnedOn: string;
+  createdAt: string;
+};
+
 export type BillMessage = {
   role: ChatRole;
   content: string;
@@ -125,6 +133,7 @@ export type GameProgressPayload = {
   customStocks: Stock[];
   completedMissions: string[];
   studiedStyles: InvestmentStyleId[];
+  studiedConcepts: StudiedConcept[];
   trades: Trade[];
   quizHistory: QuizResult[];
   sideQuestHistory: SideQuestResult[];

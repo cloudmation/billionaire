@@ -11,6 +11,7 @@ import type {
   InvestmentStyleId,
   QuizResult,
   SideQuestResult,
+  StudiedConcept,
   Stock,
   Trade
 } from "./types";
@@ -39,6 +40,7 @@ type GameState = GameProgressPayload & {
   completeMission: (id: string) => void;
   resetTodayProgress: () => void;
   markStudied: (style: InvestmentStyleId) => void;
+  markConceptStudied: (style: InvestmentStyleId, term: string) => void;
   rewardCorrectQuizAnswer: () => number;
   recordQuiz: (result: Omit<QuizResult, "id" | "createdAt">) => void;
   recordSideQuest: (result: Omit<SideQuestResult, "id" | "createdAt">) => void;
@@ -65,6 +67,10 @@ function reduceHolding(holdings: Holding[], sym: string, shares: number) {
 
 function tradeId() {
   return `trade-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function conceptKey(style: InvestmentStyleId, term: string, dateKey: string) {
+  return `${dateKey}:${style}:${term.trim().toLowerCase()}`;
 }
 
 export function getLocalDateKey(date = new Date()) {
@@ -111,6 +117,7 @@ const initialState: GameProgressPayload = {
   customStocks: [],
   completedMissions: [],
   studiedStyles: ["value"],
+  studiedConcepts: [],
   trades: [],
   quizHistory: [],
   sideQuestHistory: []
@@ -138,6 +145,7 @@ export const useGameStore = create<GameState>()(
           customStocks: progress.customStocks ?? state.customStocks,
           completedMissions: progress.completedMissions ?? state.completedMissions,
           studiedStyles: progress.studiedStyles ?? state.studiedStyles,
+          studiedConcepts: progress.studiedConcepts ?? state.studiedConcepts,
           trades: progress.trades ?? state.trades,
           quizHistory: progress.quizHistory ?? state.quizHistory,
           sideQuestHistory: progress.sideQuestHistory ?? state.sideQuestHistory
@@ -165,6 +173,7 @@ export const useGameStore = create<GameState>()(
           customStocks: [],
           completedMissions: [],
           studiedStyles: ["value"],
+          studiedConcepts: [],
           trades: [],
           quizHistory: [],
           sideQuestHistory: []
@@ -257,6 +266,7 @@ export const useGameStore = create<GameState>()(
           const today = getLocalDateKey();
           return {
             completedMissions: [],
+            studiedConcepts: state.studiedConcepts.filter((concept) => concept.learnedOn !== today),
             trades: state.trades.filter((trade) => getLocalDateKey(new Date(trade.createdAt)) !== today),
             quizHistory: state.quizHistory.filter((quiz) => getLocalDateKey(new Date(quiz.createdAt)) !== today),
             sideQuestHistory: state.sideQuestHistory.filter((quest) => getLocalDateKey(new Date(quest.createdAt)) !== today)
@@ -266,6 +276,25 @@ export const useGameStore = create<GameState>()(
         set((state) => ({
           studiedStyles: Array.from(new Set([...state.studiedStyles, style]))
         })),
+      markConceptStudied: (style, term) =>
+        set((state) => {
+          const today = getLocalDateKey();
+          const id = conceptKey(style, term, today);
+          if (state.studiedConcepts.some((concept) => concept.id === id)) {
+            return state;
+          }
+          const studiedConcept: StudiedConcept = {
+            id,
+            style,
+            term,
+            learnedOn: today,
+            createdAt: new Date().toISOString()
+          };
+          return {
+            studiedStyles: Array.from(new Set([...state.studiedStyles, style])),
+            studiedConcepts: [studiedConcept, ...state.studiedConcepts].slice(0, 300)
+          };
+        }),
       rewardCorrectQuizAnswer: () => {
         set((state) => ({ cash: state.cash + QUIZ_CORRECT_REWARD }));
         return QUIZ_CORRECT_REWARD;
@@ -309,6 +338,7 @@ export const useGameStore = create<GameState>()(
           customStocks: state.customStocks,
           completedMissions: state.completedMissions,
           studiedStyles: state.studiedStyles,
+          studiedConcepts: state.studiedConcepts,
           trades: state.trades,
           quizHistory: state.quizHistory,
           sideQuestHistory: state.sideQuestHistory
@@ -331,6 +361,7 @@ export const useGameStore = create<GameState>()(
         customStocks: state.customStocks,
         completedMissions: state.completedMissions,
         studiedStyles: state.studiedStyles,
+        studiedConcepts: state.studiedConcepts,
         trades: state.trades,
         quizHistory: state.quizHistory,
         sideQuestHistory: state.sideQuestHistory
