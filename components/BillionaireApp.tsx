@@ -37,6 +37,7 @@ import {
   ERAS,
   fmt,
   fmtCompact,
+  getMarketDate,
   getMarketStocks,
   getMarketYear,
   getMilestoneIndex,
@@ -146,6 +147,16 @@ function relativeTime(iso: string) {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.round(hours / 24);
   return `${days}d ago`;
+}
+
+function formatMarketDate(date: string) {
+  const parsed = new Date(`${date}T12:00:00`);
+  if (Number.isNaN(parsed.getTime())) return date;
+  return parsed.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
 }
 
 function formatInlineText(text: string) {
@@ -645,12 +656,13 @@ export function BillionaireApp() {
   const [billQuiz, setBillQuiz] = useState<ActiveQuiz | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [displayNetWorth, setDisplayNetWorth] = useState(0);
+  const [marketNow, setMarketNow] = useState(() => new Date());
   const loadedServer = useRef<string | null>(null);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
 
   const allStocks = useMemo(() => {
-    return getMarketStocks({ gameMode, startYear, journeyStartedAt, customStocks });
-  }, [customStocks, gameMode, journeyStartedAt, startYear]);
+    return getMarketStocks({ gameMode, startYear, journeyStartedAt, customStocks }, marketNow);
+  }, [customStocks, gameMode, journeyStartedAt, marketNow, startYear]);
   const findStock = (sym: string) => allStocks.find((stock) => stock.sym === sym);
   const stockValue = useMemo(
     () =>
@@ -669,10 +681,12 @@ export function BillionaireApp() {
   const nextMilestone = MILESTONES[milestoneIndex + 1];
   const selectedWizardStyle = wizard?.style ? STYLES.find((style) => style.id === wizard.style) ?? null : null;
   const isLiveMode = gameMode === "live";
-  const marketYear = getMarketYear({ gameMode, startYear, journeyStartedAt });
+  const marketDate = getMarketDate({ gameMode, startYear, journeyStartedAt }, marketNow);
+  const marketYear = getMarketYear({ gameMode, startYear, journeyStartedAt }, marketNow);
+  const formattedMarketDate = isLiveMode ? "Today" : formatMarketDate(marketDate);
   const currentEra = ERAS.find((era) => era.year === startYear) ?? ERAS.find((era) => era.year === DEFAULT_YEAR)!;
-  const modeLabel = isLiveMode ? "Live Market" : `Time Machine · ${marketYear}`;
-  const marketDateLabel = isLiveMode ? "Today" : `${marketYear}`;
+  const modeLabel = isLiveMode ? "Live Market" : `Time Machine · ${formattedMarketDate}`;
+  const marketDateLabel = formattedMarketDate;
   const checkedInToday = lastCheckInDate === getLocalDateKey();
   const activeCheckInStreak = getActiveCheckInStreak(lastCheckInDate, checkInStreak);
   const nextCheckInStreak = getNextCheckInStreak(lastCheckInDate, checkInStreak);
@@ -704,6 +718,11 @@ export function BillionaireApp() {
     const panel = chatScrollRef.current;
     if (panel) panel.scrollTop = panel.scrollHeight;
   }, [messages, billLoading, billQuiz]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setMarketNow(new Date()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     let frame = 0;
@@ -1564,7 +1583,7 @@ export function BillionaireApp() {
         title: "Time Machine",
         subtitle: `Start in ${startYear} with real market history`,
         bullets: [
-          "1 day = 1 year of historical market data",
+          "Every 5-6 minutes unlocks the next real trading day",
           `Discover what $1K in Apple ${startYear} becomes`,
           "Feel every crash and every comeback"
         ]
@@ -1656,7 +1675,7 @@ export function BillionaireApp() {
         <div className="hero-grid">
           <section className="hero-card">
             <div>
-              <div className="section-kicker gold">Your net worth · {isLiveMode ? "Live Market" : marketYear}</div>
+              <div className="section-kicker gold">Your net worth · {isLiveMode ? "Live Market" : formattedMarketDate}</div>
               <div className="hero-number">{fmt(displayNetWorth || netWorth)}</div>
               <div className="row" style={{ marginTop: 8, flexWrap: "wrap" }}>
                 <span className="green" style={{ fontWeight: 900 }}>
@@ -1671,7 +1690,7 @@ export function BillionaireApp() {
           </section>
 
           <section className="card">
-            <div className="section-kicker gold">{isLiveMode ? "Market mode" : `Time Machine year · ${marketYear}`}</div>
+            <div className="section-kicker gold">{isLiveMode ? "Market mode" : `Time Machine date · ${formattedMarketDate}`}</div>
             <h2 className="display" style={{ fontSize: 44, margin: "8px 0 4px", color: "rgba(240,199,109,0.9)" }}>
               {isLiveMode ? "LIVE" : marketYear}
             </h2>
@@ -1685,7 +1704,7 @@ export function BillionaireApp() {
               <p className="muted" style={{ margin: "7px 0 0", lineHeight: 1.55, fontSize: 13 }}>
                 {isLiveMode
                   ? "Use the same discipline as Time Machine: pick one lens, name the risk, then decide whether the trade deserves capital."
-                  : `${currentEra.title} began in ${startYear}. One real day moves the market forward one year.`}
+                  : `${currentEra.title} began in ${startYear}. A new real trading day appears about every 5-6 minutes.`}
               </p>
             </div>
           </section>

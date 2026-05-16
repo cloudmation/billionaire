@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
-import { DEFAULT_YEAR, fmt, getMarketStocks, getMarketYear } from "@/lib/game-data";
+import { DEFAULT_YEAR, fmt, getMarketDate, getMarketStocks, getMarketYear } from "@/lib/game-data";
 import { logBillMessages } from "@/lib/db";
 import type { BillMessage, GameProgressPayload, Stock, TabId } from "@/lib/types";
 
@@ -43,6 +43,7 @@ function portfolioValueFor(progress?: GameProgressPayload) {
 
 function buildInstructions(context?: BillContext) {
   const netWorth = (context?.progress?.cash ?? 0) + portfolioValueFor(context?.progress);
+  const marketDate = context?.progress ? getMarketDate(context.progress) : `${DEFAULT_YEAR}-01-01`;
   const marketYear = context?.progress ? getMarketYear(context.progress) : DEFAULT_YEAR;
   const selected = context?.selectedStock
     ? `${context.selectedStock.sym} (${context.selectedStock.name}), price ${fmt(context.selectedStock.price)}, P/E ${
@@ -74,11 +75,12 @@ Formatting:
 
 Player context:
 - Time Machine start year: ${context?.progress?.startYear ?? DEFAULT_YEAR}
+- Current market date shown to player: ${marketDate}
 - Current market year shown to player: ${marketYear}
 - Player name: ${context?.progress?.userName ?? "Investor"}
 - Player age: ${context?.progress?.playerAge ?? 12}
 - Game mode: ${context?.progress?.gameMode === "live" ? "Live Market" : "Time Machine"}
-- Time Machine pricing: one real day equals one simulated year, using split-adjusted historical stock prices for the shown year.
+- Time Machine pricing: about every 5 minutes 43 seconds unlocks the next historical trading day, using split-adjusted historical stock prices for the shown date.
 - Current screen: ${context?.screen ?? "home"}
 - Net worth: ${fmt(netWorth)}
 - Cash: ${fmt(context?.progress?.cash ?? 0)}

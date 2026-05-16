@@ -8,6 +8,7 @@ import type {
   Quiz,
   Stock
 } from "./types";
+import dailyPrices from "./historical-daily-prices.json";
 
 export const DEFAULT_YEAR = 2010;
 export const STARTING_CASH = 1000;
@@ -293,6 +294,14 @@ export const STOCKS: Stock[] = [
 ];
 
 export const MAX_MARKET_YEAR = 2026;
+export const SIMULATED_MARKET_DAY_MS = Math.round(86_400_000 / 252);
+
+type DailyPriceRow = [string, number];
+
+// Split-adjusted daily close prices keep historical trades comparable across stock splits.
+const DAILY_PRICES = dailyPrices as unknown as Record<string, DailyPriceRow[]>;
+const MARKET_DATES = DAILY_PRICES.AAPL.map(([date]) => date);
+export const MAX_MARKET_DATE = MARKET_DATES[MARKET_DATES.length - 1] ?? "2026-01-01";
 
 export const HISTORICAL_PRICES: Record<string, Partial<Record<number, number>>> = {
   AAPL: {
@@ -1019,51 +1028,102 @@ export function pct(n: number) {
   return `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
 }
 
-function localMidnight(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-}
-
 function roundMoney(n: number) {
   return Math.round(n * 100) / 100;
 }
 
-function yearPrice(sym: string, year: number) {
-  return HISTORICAL_PRICES[sym]?.[year];
+function dateForYearStart(year: number) {
+  return `${year}-01-01`;
 }
 
-function firstHistoryYear(sym: string) {
-  const years = Object.keys(HISTORICAL_PRICES[sym] ?? {})
-    .map(Number)
-    .sort((a, b) => a - b);
-  return years[0] ?? MAX_MARKET_YEAR;
+function findFirstDateIndexOnOrAfter(date: string) {
+  let low = 0;
+  let high = MARKET_DATES.length - 1;
+  let answer = MARKET_DATES.length - 1;
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    if (MARKET_DATES[mid] >= date) {
+      answer = mid;
+      high = mid - 1;
+    } else {
+      low = mid + 1;
+    }
+  }
+  return answer;
 }
 
-function previousHistoryPrice(sym: string, year: number) {
-  const years = Object.keys(HISTORICAL_PRICES[sym] ?? {})
-    .map(Number)
-    .filter((candidate) => candidate < year)
-    .sort((a, b) => b - a);
-  const previousYear = years[0];
-  return previousYear ? yearPrice(sym, previousYear) : undefined;
+function findRowIndexOnOrBefore(rows: DailyPriceRow[], date: string) {
+  let low = 0;
+  let high = rows.length - 1;
+  let answer = -1;
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    if (rows[mid][0] <= date) {
+      answer = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+  return answer;
+}
+
+function findRowIndexOnOrAfter(rows: DailyPriceRow[], date: string) {
+  let low = 0;
+  let high = rows.length - 1;
+  let answer = -1;
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    if (rows[mid][0] >= date) {
+      answer = mid;
+      high = mid - 1;
+    } else {
+      low = mid + 1;
+    }
+  }
+  return answer;
+}
+
+function getDailyPricePoint(sym: string, date: string) {
+  const rows = DAILY_PRICES[sym] ?? [];
+  const index = findRowIndexOnOrBefore(rows, date);
+  if (index < 0) return null;
+  return { date: rows[index][0], price: rows[index][1], index, rows };
+}
+
+function getBasePricePoint(sym: string, startYear: number, currentDate: string) {
+  const rows = DAILY_PRICES[sym] ?? [];
+  const index = findRowIndexOnOrAfter(rows, dateForYearStart(startYear));
+  if (index < 0 || rows[index][0] > currentDate) return null;
+  return { date: rows[index][0], price: rows[index][1], index, rows };
+}
+
+export function getSimulatedMarketDate(startYear: number, journeyStartedAt?: string | null, now = new Date()) {
+  const startIndex = findFirstDateIndexOnOrAfter(dateForYearStart(startYear));
+  if (!journeyStartedAt) return MARKET_DATES[startIndex] ?? MAX_MARKET_DATE;
+  const started = new Date(journeyStartedAt);
+  if (Number.isNaN(started.getTime())) return MARKET_DATES[startIndex] ?? MAX_MARKET_DATE;
+  const elapsedMarketDays = Math.max(0, Math.floor((now.getTime() - started.getTime()) / SIMULATED_MARKET_DAY_MS));
+  return MARKET_DATES[Math.min(MARKET_DATES.length - 1, startIndex + elapsedMarketDays)] ?? MAX_MARKET_DATE;
 }
 
 export function getSimulatedYear(startYear: number, journeyStartedAt?: string | null, now = new Date()) {
-  if (!journeyStartedAt) return Math.min(MAX_MARKET_YEAR, startYear);
-  const started = new Date(journeyStartedAt);
-  if (Number.isNaN(started.getTime())) return Math.min(MAX_MARKET_YEAR, startYear);
-  const elapsedDays = Math.max(0, Math.floor((localMidnight(now) - localMidnight(started)) / 86_400_000));
-  return Math.min(MAX_MARKET_YEAR, Math.max(startYear, startYear + elapsedDays));
+  return Number(getSimulatedMarketDate(startYear, journeyStartedAt, now).slice(0, 4));
+}
+
+export function getMarketDate(progress: Pick<GameProgressPayload, "gameMode" | "startYear" | "journeyStartedAt">, now = new Date()) {
+  return progress.gameMode === "live" ? MAX_MARKET_DATE : getSimulatedMarketDate(progress.startYear, progress.journeyStartedAt, now);
 }
 
 export function getMarketYear(progress: Pick<GameProgressPayload, "gameMode" | "startYear" | "journeyStartedAt">, now = new Date()) {
-  return progress.gameMode === "live" ? MAX_MARKET_YEAR : getSimulatedYear(progress.startYear, progress.journeyStartedAt, now);
+  return Number(getMarketDate(progress, now).slice(0, 4));
 }
 
 export function getMarketStocks(
   progress: Pick<GameProgressPayload, "gameMode" | "startYear" | "journeyStartedAt" | "customStocks">,
   now = new Date()
 ) {
-  const marketYear = getMarketYear(progress, now);
+  const marketDate = getMarketDate(progress, now);
   const stocks = new Map<string, Stock>();
 
   STOCKS.forEach((stock) => {
@@ -1072,19 +1132,17 @@ export function getMarketStocks(
       return;
     }
 
-    const price = yearPrice(stock.sym, marketYear);
-    if (price == null) return;
+    const current = getDailyPricePoint(stock.sym, marketDate);
+    if (!current) return;
 
-    const previous = previousHistoryPrice(stock.sym, marketYear);
-    const firstYear = firstHistoryYear(stock.sym);
-    const baseYear = Math.max(progress.startYear, firstYear);
-    const basePrice = yearPrice(stock.sym, baseYear) ?? price;
-    const change = previous != null ? ((price - previous) / previous) * 100 : 0;
-    const sinceStart = basePrice ? ((price - basePrice) / basePrice) * 100 : 0;
+    const previous = current.index > 0 ? current.rows[current.index - 1][1] : null;
+    const base = getBasePricePoint(stock.sym, progress.startYear, current.date);
+    const change = previous != null ? ((current.price - previous) / previous) * 100 : 0;
+    const sinceStart = base?.price ? ((current.price - base.price) / base.price) * 100 : 0;
 
     stocks.set(stock.sym, {
       ...stock,
-      price: roundMoney(price),
+      price: roundMoney(current.price),
       change: Math.round(change * 100) / 100,
       since2010: Math.round(sinceStart)
     });
