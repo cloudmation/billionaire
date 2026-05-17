@@ -122,51 +122,10 @@ type SideQuestDefinition = {
   prompt: string;
   reward: number;
   placeholder: string;
-  isMatch: (stock: Stock) => boolean;
+  requiresStock: boolean;
+  stockHelper: string;
+  isMatch?: (stock: Stock) => boolean;
 };
-
-const SIDE_QUESTS: SideQuestDefinition[] = [
-  {
-    id: "value-moat",
-    title: "Value Moat Hunt",
-    prompt: "Find a stock with a P/E under 25 and explain whether the moat is strong enough.",
-    reward: 5000,
-    placeholder: "Explain why the business can protect profits from competitors.",
-    isMatch: (stock) => stock.pe !== null && stock.pe < 25
-  },
-  {
-    id: "dividend-safety",
-    title: "Dividend Safety Check",
-    prompt: "Find a stock with a dividend yield above 1.5% and explain one risk to that dividend.",
-    reward: 4000,
-    placeholder: "Explain what could make the dividend safer or riskier.",
-    isMatch: (stock) => stock.yield > 1.5
-  },
-  {
-    id: "growth-quality",
-    title: "Growth Quality Scan",
-    prompt: "Find a stock growing revenue at least 15% and explain what could keep that growth going.",
-    reward: 4500,
-    placeholder: "Explain whether the growth looks durable or fragile.",
-    isMatch: (stock) => stock.growth >= 15
-  },
-  {
-    id: "risk-radar",
-    title: "Risk Radar",
-    prompt: "Find a stock with beta above 1.5 and explain why the risk might be worth it or not.",
-    reward: 3500,
-    placeholder: "Explain the risk in plain language and what you would watch.",
-    isMatch: (stock) => stock.beta > 1.5
-  },
-  {
-    id: "technical-pullback",
-    title: "Chart Patience",
-    prompt: "Find a stock with RSI under 50 and explain what signal you would wait for before buying.",
-    reward: 3500,
-    placeholder: "Explain what would make the chart setup look healthier.",
-    isMatch: (stock) => stock.rsi < 50
-  }
-];
 
 function StyleIcon({ style, size = 18 }: { style: InvestmentStyle; size?: number }) {
   const common = { size, strokeWidth: 2.4 };
@@ -215,6 +174,60 @@ function lessonStyleId(lesson: { mentor: string; title: string }): InvestmentSty
   if (lesson.mentor.includes("Rockefeller")) return "dividend";
   if (lesson.mentor.includes("Richard")) return "momentum";
   return "value";
+}
+
+function lessonNeedsTicker(activity: string) {
+  return /\b(stock|company|chart|trade|buy|skip|memo)\b/i.test(activity) && !/\b(portfolio|letter|checklist)\b/i.test(activity);
+}
+
+function lessonStockMatch(lesson: (typeof INVESTOR_APPRENTICESHIP)[number]) {
+  const text = `${lesson.title} ${lesson.focus} ${lesson.activity}`.toLowerCase();
+  if (text.includes("p/e") || text.includes("valuation") || text.includes("price")) return (stock: Stock) => stock.pe !== null;
+  if (text.includes("growth")) return (stock: Stock) => stock.growth >= 10;
+  if (text.includes("dividend")) return (stock: Stock) => stock.yield > 0;
+  if (text.includes("volatility") || text.includes("risk") || text.includes("panic")) return (stock: Stock) => stock.beta >= 1;
+  if (text.includes("chart") || text.includes("technical")) return (stock: Stock) => stock.rsi > 0;
+  return undefined;
+}
+
+function lessonSideQuests(lesson: (typeof INVESTOR_APPRENTICESHIP)[number]) {
+  const requiresStock = lessonNeedsTicker(lesson.activity);
+  const isMatch = requiresStock ? lessonStockMatch(lesson) : undefined;
+  const stockHelper = isMatch
+    ? "Use the Market metrics to find a ticker that fits today's lesson."
+    : "Pick any relevant ticker from Market, or leave this blank if the quest is about your portfolio or process.";
+  const base = {
+    reward: 250 + lesson.day * 25,
+    requiresStock,
+    stockHelper,
+    isMatch
+  };
+  return [
+    {
+      ...base,
+      id: `lesson-${lesson.day}-apply`,
+      title: `Day ${lesson.day}: ${lesson.focus}`,
+      prompt: `Today's lesson is "${lesson.title}." ${lesson.activity}`,
+      placeholder: "Answer in 1-3 sentences. Explain the reason, not just the choice."
+    },
+    {
+      ...base,
+      id: `lesson-${lesson.day}-risk`,
+      title: `${lesson.focus} Check`,
+      prompt: `Use today's lesson, "${lesson.title}", to name one risk or weak spot a careful investor should check.`,
+      placeholder: "Name the risk and what evidence would make you more comfortable."
+    },
+    {
+      ...base,
+      requiresStock: false,
+      stockHelper: "No ticker needed for this reflection quest.",
+      isMatch: undefined,
+      id: `lesson-${lesson.day}-reflection`,
+      title: `${lesson.mentor} Question`,
+      prompt: `After today's lesson on ${lesson.focus.toLowerCase()}, write one question you would ask before investing real money.`,
+      placeholder: "Write one clear investor question and why it matters."
+    }
+  ] satisfies SideQuestDefinition[];
 }
 
 function requestedConceptCount(content: string) {
@@ -1230,7 +1243,8 @@ export function BillionaireApp() {
     [sideQuestHistory, todayKey]
   );
   const sideQuestLimitReached = todaysSideQuests.length >= SIDE_QUEST_DAILY_LIMIT;
-  const activeSideQuest = sideQuestLimitReached ? null : SIDE_QUESTS[todaysSideQuests.length % SIDE_QUESTS.length];
+  const lessonQuestSet = useMemo(() => lessonSideQuests(activeLesson), [activeLesson]);
+  const activeSideQuest = sideQuestLimitReached ? null : lessonQuestSet[todaysSideQuests.length % lessonQuestSet.length];
 
   const allocation = useMemo(() => {
     const bySector = new Map<string, number>();
@@ -1679,21 +1693,21 @@ export function BillionaireApp() {
   async function submitSideQuest() {
     const quest = activeSideQuest;
     const stockSymbol = sideQuestStock.trim().toUpperCase().replace(/[^A-Z0-9.-]/g, "");
-    const stock = findStock(stockSymbol);
+    const stock = stockSymbol ? findStock(stockSymbol) : null;
     const answer = sideQuestAnswer.trim();
     if (!quest) {
       setSideQuestError("You hit today's side quest limit. Come back tomorrow for more.");
       return;
     }
-    if (!stockSymbol) {
+    if (quest.requiresStock && !stockSymbol) {
       setSideQuestError("Enter the ticker symbol you found in the Market.");
       return;
     }
-    if (!stock) {
+    if (quest.requiresStock && !stock) {
       setSideQuestError("I cannot find that ticker in the Market yet.");
       return;
     }
-    if (!quest.isMatch(stock)) {
+    if (stock && quest.isMatch && !quest.isMatch(stock)) {
       setSideQuestError("That ticker does not match this quest. Check the Market metrics and try another symbol.");
       return;
     }
@@ -1705,7 +1719,10 @@ export function BillionaireApp() {
     setSideQuestError("");
     setSideQuestLoading(true);
     setBillPanelOpen(true);
-    const prompt = `Review my side quest answer in simple kid-friendly language. Side quest: ${quest.prompt} Stock I found: ${stock.sym} (${stock.name}). Metrics: P/E ${stock.pe ?? "N/A"}, yield ${stock.yield}%, growth ${stock.growth}%, beta ${stock.beta}, RSI ${stock.rsi}, moat: ${stock.moat}. My answer: ${answer}. Give me brief feedback and one next question.`;
+    const stockContext = stock
+      ? `Stock I found: ${stock.sym} (${stock.name}). Metrics: P/E ${stock.pe ?? "N/A"}, yield ${stock.yield}%, growth ${stock.growth}%, beta ${stock.beta}, RSI ${stock.rsi}, moat: ${stock.moat}.`
+      : "No ticker was required for this lesson quest.";
+    const prompt = `Review my side quest answer in simple kid-friendly language. Today's lesson: Day ${activeLesson.day}, ${activeLesson.title}. Side quest: ${quest.prompt} ${stockContext} My answer: ${answer}. Give me brief feedback and one next question.`;
     const outgoing = [...messages, { role: "user" as const, content: prompt }];
     setMessages(outgoing);
     try {
@@ -1716,7 +1733,7 @@ export function BillionaireApp() {
           messages: outgoing,
           context: {
             screen: tab,
-            selectedStock: stock,
+            selectedStock: stock ?? null,
             progress: progressPayload(snapshot)
           }
         })
@@ -1724,7 +1741,7 @@ export function BillionaireApp() {
       const data = (await response.json()) as { text?: string };
       recordSideQuest({
         questId: quest.id,
-        stockSym: stock.sym,
+        stockSym: stock?.sym ?? "LESSON",
         answer,
         reward: quest.reward
       });
@@ -2891,10 +2908,11 @@ export function BillionaireApp() {
             </div>
             <div style={{ flex: 1 }}>
               <div className="section-kicker" style={{ color: "var(--green)" }}>
-                BILL's side quest
+                BILL's lesson side quest
               </div>
               <p style={{ margin: "5px 0 0", fontWeight: 800 }}>{activeSideQuest?.prompt ?? "Daily side quest limit reached. Come back tomorrow for more."}</p>
               <p className="muted" style={{ margin: "4px 0 0", fontSize: 13 }}>
+                Day {activeLesson.day}: {activeLesson.title} ·{" "}
                 {todaysSideQuests.length}/{SIDE_QUEST_DAILY_LIMIT} completed today
                 {activeSideQuest ? ` · Reward: +${fmt(activeSideQuest.reward)} cash` : ""}
               </p>
@@ -2921,18 +2939,23 @@ export function BillionaireApp() {
               }}
               style={{ marginTop: 18 }}
             >
-              <label className="form-label">
-                Ticker you found
-                <input
-                  className="input"
-                  onChange={(event) => {
-                    setSideQuestError("");
-                    setSideQuestStock(event.target.value.toUpperCase());
-                  }}
-                  placeholder="Find it in the Market, then enter the ticker"
-                  value={sideQuestStock}
-                />
-              </label>
+              {activeSideQuest.requiresStock ? (
+                <label className="form-label">
+                  Ticker you found
+                  <input
+                    className="input"
+                    onChange={(event) => {
+                      setSideQuestError("");
+                      setSideQuestStock(event.target.value.toUpperCase());
+                    }}
+                    placeholder="Find it in the Market, then enter the ticker"
+                    value={sideQuestStock}
+                  />
+                  <span className="muted" style={{ fontSize: 12, letterSpacing: 0, textTransform: "none" }}>
+                    {activeSideQuest.stockHelper}
+                  </span>
+                </label>
+              ) : null}
               <label className="form-label">
                 Explain your thinking
                 <textarea
@@ -2948,7 +2971,7 @@ export function BillionaireApp() {
                 />
               </label>
               {sideQuestError ? <div className="form-error">{sideQuestError}</div> : null}
-              <button className="primary-button" disabled={sideQuestLoading || !sideQuestStock.trim()} type="submit">
+              <button className="primary-button" disabled={sideQuestLoading || (activeSideQuest.requiresStock && !sideQuestStock.trim()) || !sideQuestAnswer.trim()} type="submit">
                 {sideQuestLoading ? "BILL is checking..." : "Submit answer"}
                 <Send size={16} />
               </button>
